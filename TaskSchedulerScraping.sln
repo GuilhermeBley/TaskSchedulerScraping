@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E126F91B-C894-4635-8882-D1C80EC06096}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulerScraping.Domain", "src\TaskSchedulerScraping.Domain\TaskSchedulerScraping.Domain.csproj", "{510C8861-521C-4448-A0FB-F34959FFB374}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulerScraping.Application", "src\TaskSchedulerScraping.Application\TaskSchedulerScraping.Application.csproj", "{6BE3575B-EB5B-47C2-B2EC-171FEDA24A80}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulerScraping.Infrastructure", "src\TaskSchedulerScraping.Infrastructure\TaskSchedulerScraping.Infrastructure.csproj", "{B63EA7E0-89AA-4B6B-829F-A5994CB40A26}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulerScraping.Api", "src\TaskSchedulerScraping.Api\TaskSchedulerScraping.Api.csproj", "{8E5F0CDA-B79C-4A71-8BF5-90E07529716B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{510C8861-521C-4448-A0FB-F34959FFB374}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{510C8861-521C-4448-A0FB-F34959FFB374}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{510C8861-521C-4448-A0FB-F34959FFB374}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{510C8861-521C-4448-A0FB-F34959FFB374}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BE3575B-EB5B-47C2-B2EC-171FEDA24A80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BE3575B-EB5B-47C2-B2EC-171FEDA24A80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BE3575B-EB5B-47C2-B2EC-171FEDA24A80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BE3575B-EB5B-47C2-B2EC-171FEDA24A80}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B63EA7E0-89AA-4B6B-829F-A5994CB40A26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B63EA7E0-89AA-4B6B-829F-A5994CB40A26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B63EA7E0-89AA-4B6B-829F-A5994CB40A26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B63EA7E0-89AA-4B6B-829F-A5994CB40A26}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E5F0CDA-B79C-4A71-8BF5-90E07529716B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E5F0CDA-B79C-4A71-8BF5-90E07529716B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E5F0CDA-B79C-4A71-8BF5-90E07529716B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E5F0CDA-B79C-4A71-8BF5-90E07529716B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{510C8861-521C-4448-A0FB-F34959FFB374} = {E126F91B-C894-4635-8882-D1C80EC06096}
+		{6BE3575B-EB5B-47C2-B2EC-171FEDA24A80} = {E126F91B-C894-4635-8882-D1C80EC06096}
+		{B63EA7E0-89AA-4B6B-829F-A5994CB40A26} = {E126F91B-C894-4635-8882-D1C80EC06096}
+		{8E5F0CDA-B79C-4A71-8BF5-90E07529716B} = {E126F91B-C894-4635-8882-D1C80EC06096}
+	EndGlobalSection
+EndGlobal
