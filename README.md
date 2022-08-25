@@ -12,3 +12,14 @@
     - Import config
 - Use MySql to storage
 - Search Log
+
+## Project Estructure View
+
+TaskSchedulerScraping.Api -> TaskSchedulerScraping.Infrastructure -> TaskSchedulerScraping.Application -> TaskSchedulerScraping.Domain
+
+## Venn View
+
+## FlowChart
+
+## ER Diagram
+
