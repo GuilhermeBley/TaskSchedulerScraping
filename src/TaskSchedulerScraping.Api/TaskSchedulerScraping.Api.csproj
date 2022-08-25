@@ -10,4 +10,9 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\TaskSchedulerScraping.Application\TaskSchedulerScraping.Application.csproj" />
+    <ProjectReference Include="..\TaskSchedulerScraping.Infrastructure\TaskSchedulerScraping.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
