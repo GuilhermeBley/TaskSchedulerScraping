@@ -29,4 +29,4 @@ TaskSchedulerScraping.Api -> TaskSchedulerScraping.Infrastructure -> TaskSchedul
 
 ## ER Diagram
 
-![TaskSchedulerScraping - ER Diagram](https://user-images.githubusercontent.com/69880922/186738653-f7f50dcf-f6e4-4d48-8de5-9ec7358c649b.png)
+![TaskSchedulerScraping - ER Diagram](https://user-images.githubusercontent.com/69880922/186740197-e69115e7-068b-4956-9f6a-1731b91488df.png)
