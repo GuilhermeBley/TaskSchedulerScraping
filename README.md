@@ -3,6 +3,7 @@
 ## Project Resume
 
 - Uses Clean Architecture
+- DDD
 - Uses Web Api to Load Web Scraping process
     - Start
     - Stop
