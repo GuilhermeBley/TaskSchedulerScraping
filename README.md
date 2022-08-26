@@ -3,6 +3,7 @@
 ## Project Resume
 
 - Uses Clean Architecture
+- DDD
 - Uses Web Api to Load Web Scraping process
     - Start
     - Stop
@@ -29,4 +30,4 @@ TaskSchedulerScraping.Api -> TaskSchedulerScraping.Infrastructure -> TaskSchedul
 
 ## ER Diagram
 
-![TaskSchedulerScraping - ER Diagram](https://user-images.githubusercontent.com/69880922/186679487-1dc049cf-30ac-4f19-8d1b-1592d9ff28eb.png)
+![TaskSchedulerScraping - ER Diagram](https://user-images.githubusercontent.com/69880922/186740197-e69115e7-068b-4956-9f6a-1731b91488df.png)
