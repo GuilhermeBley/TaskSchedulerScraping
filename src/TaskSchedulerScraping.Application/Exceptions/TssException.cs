@@ -12,6 +12,11 @@ public abstract class TssException : Exception
     /// </Remarks>
     public abstract int StatusCode { get; }
 
+    /// <summary>
+    /// Returned body
+    /// </summary>
+    public virtual object Body => Message;
+
     protected TssException()
     {
     }
