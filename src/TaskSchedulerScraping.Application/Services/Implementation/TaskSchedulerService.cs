@@ -1,3 +1,4 @@
+using AutoMapper;
 using TaskSchedulerScraping.Application.Dto.TaskScheduler;
 using TaskSchedulerScraping.Application.Repositories.TaskScheduler;
 using TaskSchedulerScraping.Application.Services.Interfaces;
@@ -12,19 +13,22 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
     private readonly ITaskTriggerRepository _taskTriggerRepository;
     private readonly ITaskSchedulerService _taskSchedulerService;
     private readonly IUnitOfWork _uoW;
+    private readonly Mapper _mapper;
 
     public TaskSchedulerService(
         ITaskGroupRepository taskGroupRepository,
         ITaskActionRepository taskActionRepository,
         ITaskTriggerRepository taskTriggerRepository,
         ITaskSchedulerService taskSchedulerService,
-        IUnitOfWork uoW)
+        IUnitOfWork uoW,
+        Mapper mapper)
     {
         _taskGroupRepository = taskGroupRepository;
         _taskActionRepository = taskActionRepository;
         _taskTriggerRepository = taskTriggerRepository;
         _taskSchedulerService = taskSchedulerService;
         _uoW = uoW;
+        _mapper = mapper;
     }
 
     public Task<TaskActionDto> AddTaskActionAsync(TaskActionDto taskAction)

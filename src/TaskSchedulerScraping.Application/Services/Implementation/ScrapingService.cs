@@ -1,3 +1,4 @@
+using AutoMapper;
 using TaskSchedulerScraping.Application.Dto.Scraping;
 using TaskSchedulerScraping.Application.Repositories.Scraping;
 using TaskSchedulerScraping.Application.Services.Interfaces;
@@ -10,15 +11,18 @@ public sealed class ScrapingService : IScrapingService
     private readonly IScrapingExecuteRepository _scrapingExecuteRepository;
     private readonly IScrapingModelRepository _scrapingModelRepository;
     private readonly IUnitOfWork _uoW;
+    private readonly IMapper _mapper;
 
     public ScrapingService(
         IScrapingExecuteRepository scrapingExecuteRepository,
         IScrapingModelRepository scrapingModelRepository,
-        IUnitOfWork uoW)
+        IUnitOfWork uoW,
+        IMapper mapper)
     {
         _scrapingExecuteRepository = scrapingExecuteRepository;
         _scrapingModelRepository = scrapingModelRepository;
         _uoW = uoW;
+        _mapper = mapper;
     }
 
     public Task<ScrapingExecuteDto> AddScrapingExecuteAsync(ScrapingExecuteDto scrapingExecute)
