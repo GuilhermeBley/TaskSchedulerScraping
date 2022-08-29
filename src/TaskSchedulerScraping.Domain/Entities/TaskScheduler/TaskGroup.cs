@@ -29,7 +29,7 @@ public class TaskGroup
         var execeptions = new List<string>();
 
         if (id < 0)
-            execeptions.Add($"{nameof(id)} must be greater than '0'.");
+            execeptions.Add($"{nameof(id)} must be greater or equals than '0'.");
 
         if (string.IsNullOrEmpty(name))
             execeptions.Add($"Has null or empty required strings.");

@@ -7,14 +7,17 @@ namespace TaskSchedulerScraping.Application.Exceptions;
 /// </summary>
 public class InvalidModelTssException : TssException
 {
-    private readonly IEnumerable<string> _errors;
+    private readonly IEnumerable<Exception> _errors;
+    private readonly IEnumerable<string> _messages;
 
     public override int StatusCode => (int)HttpStatusCode.BadRequest;
 
-    public override object Body => _errors;
+    public IEnumerable<Exception> Errors => _errors;
+    public override object Body => string.Join('\n', _messages);
 
-    public InvalidModelTssException(IEnumerable<string> errors)
+    public InvalidModelTssException(IEnumerable<Exception> errors)
     {
         _errors = errors;
+        _messages = errors.Select(e => e.Message);
     }
 }

@@ -6,7 +6,6 @@ public class TaskAction
 {
     public int Id { get; private set; }
     public int IdTaskRegistration { get; private set; }
-    public TaskRegistration TaskRegistration { get; private set; } = null!;
     public DateTime UpdateAt { get; private set; }
     public string ProgramOrScript { get; private set; } = string.Empty;
     public string Args { get; private set; } = string.Empty;
@@ -15,7 +14,6 @@ public class TaskAction
     private TaskAction(
         int id, 
         int idTaskRegistration, 
-        TaskRegistration taskRegistration, 
         DateTime updateAt, 
         string programOrScript, 
         string args, 
@@ -23,7 +21,6 @@ public class TaskAction
     {
         Id = id;
         IdTaskRegistration = idTaskRegistration;
-        TaskRegistration = taskRegistration;
         UpdateAt = updateAt;
         ProgramOrScript = programOrScript;
         Args = args;
@@ -32,8 +29,7 @@ public class TaskAction
 
     public static IValidationResult<TaskAction> Create(
         int id, 
-        int idTaskRegistration, 
-        TaskRegistration taskRegistration, 
+        int idTaskRegistration,
         DateTime updateAt, 
         string programOrScript, 
         string args, 
@@ -49,8 +45,8 @@ public class TaskAction
             string.IsNullOrEmpty(startIn))
             execeptions.Add($"Has null or empty required strings.");
 
-        if (idTaskRegistration < 1 || taskRegistration is null)
-            execeptions.Add($"must be have a {nameof(taskRegistration)}.");
+        if (idTaskRegistration < 1)
+            execeptions.Add($"{nameof(idTaskRegistration)} must be greater than '0'.");
 
         if (updateAt.Equals(DateTime.MinValue) ||
             updateAt >= DateTime.Now)
@@ -60,7 +56,7 @@ public class TaskAction
             return ValidationResult<TaskAction>.GetWithErrors(execeptions);
 
         return ValidationResult<TaskAction>.GetSuccess(
-            new TaskAction(id, idTaskRegistration, taskRegistration!, updateAt, programOrScript, args, startIn)
+            new TaskAction(id, idTaskRegistration, updateAt, programOrScript, args, startIn)
         );
     }
 }

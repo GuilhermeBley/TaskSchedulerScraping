@@ -1,10 +1,11 @@
 using TaskSchedulerScraping.Application.Dto.Scraping;
 using TaskSchedulerScraping.Application.Repositories.Scraping;
+using TaskSchedulerScraping.Application.Services.Interfaces;
 using TaskSchedulerScraping.Application.UoW;
 
-namespace TaskSchedulerScraping.Application.Services.Interfaces;
+namespace TaskSchedulerScraping.Application.Services.Implementation;
 
-public class ScrapingService : IScrapingService
+public sealed class ScrapingService : IScrapingService
 {
     private readonly IScrapingExecuteRepository _scrapingExecuteRepository;
     private readonly IScrapingModelRepository _scrapingModelRepository;

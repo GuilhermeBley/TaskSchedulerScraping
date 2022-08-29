@@ -8,22 +8,6 @@ namespace TaskSchedulerScraping.Application.UoW;
 public interface IUnitOfWork : IDisposable
 {
     /// <summary>
-    /// Currently connection
-    /// </summary>
-    /// <remarks>
-    ///     <para>Needs a open connection</para>
-    /// </remarks>
-    IDbConnection Connection { get; }
-
-    /// <summary>
-    /// Currently transaction
-    /// </summary>
-    /// <remarks>
-    ///     <para>Needs a open connection with transaction</para>
-    /// </remarks>
-    IDbTransaction Transaction { get; }
-
-    /// <summary>
     /// Identifier of unit
     /// </summary>
     Guid Identifier { get; }

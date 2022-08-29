@@ -1,10 +1,11 @@
 using TaskSchedulerScraping.Application.Dto.TaskScheduler;
 using TaskSchedulerScraping.Application.Repositories.TaskScheduler;
+using TaskSchedulerScraping.Application.Services.Interfaces;
 using TaskSchedulerScraping.Application.UoW;
 
-namespace TaskSchedulerScraping.Application.Services.Interfaces;
+namespace TaskSchedulerScraping.Application.Services.Implementation;
 
-public class TaskSchedulerService : ITaskSchedulerService
+public sealed class TaskSchedulerService : ITaskSchedulerService
 {
     private readonly ITaskGroupRepository _taskGroupRepository;
     private readonly ITaskActionRepository _taskActionRepository;

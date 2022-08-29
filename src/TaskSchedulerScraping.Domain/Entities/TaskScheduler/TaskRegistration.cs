@@ -6,7 +6,6 @@ public class TaskRegistration
 {
     public int Id { get; private set; }
     public int IdTaskGroup { get; private set; }
-    public TaskGroup TaskGroup { get; private set; } = null!;
     public string Name { get; private set; } = string.Empty;
     public string NormalizedName { get; private set; } = string.Empty;
     public string Location { get; private set; } = string.Empty;
@@ -16,7 +15,6 @@ public class TaskRegistration
     private TaskRegistration(
         int id,
         int idTaskGroup,
-        TaskGroup taskGroup,
         string name,
         string normalizedName,
         string location,
@@ -25,7 +23,6 @@ public class TaskRegistration
     {
         Id = id;
         IdTaskGroup = idTaskGroup;
-        TaskGroup = taskGroup;
         Name = name;
         NormalizedName = normalizedName;
         Location = location;
@@ -36,7 +33,6 @@ public class TaskRegistration
     public static IValidationResult<TaskRegistration> Create(
         int id,
         int idTaskGroup,
-        TaskGroup taskGroup,
         string name,
         string location,
         string description,
@@ -45,7 +41,7 @@ public class TaskRegistration
         var execeptions = new List<string>();
 
         if (id < 0)
-            execeptions.Add($"{nameof(id)} must be greater than '0'.");
+            execeptions.Add($"{nameof(id)} must be greater or equals than '0'.");
 
         if (string.IsNullOrEmpty(name) ||
             string.IsNullOrEmpty(location) ||
@@ -53,8 +49,8 @@ public class TaskRegistration
             string.IsNullOrEmpty(author))
             execeptions.Add($"Has null or empty required strings.");
 
-        if (taskGroup is null || idTaskGroup < 1)
-            execeptions.Add($"{nameof(taskGroup)} is null.");
+        if (idTaskGroup < 1)
+            execeptions.Add($"{nameof(idTaskGroup)} must be greater than '0'.");
 
         if (!name.All(char.IsLetter))
             execeptions.Add($"{nameof(name)} must be have only letters.");
@@ -63,7 +59,7 @@ public class TaskRegistration
             return ValidationResult<TaskRegistration>.GetWithErrors(execeptions);
 
         return ValidationResult<TaskRegistration>.GetSuccess(
-            new TaskRegistration(id, idTaskGroup, taskGroup!, name, name.ToUpper(), location, description, author)
+            new TaskRegistration(id, idTaskGroup, name, name.ToUpper(), location, description, author)
         );
     }
 }
