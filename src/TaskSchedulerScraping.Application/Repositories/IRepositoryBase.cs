@@ -5,20 +5,20 @@ namespace TaskSchedulerScraping.Application.Repositories;
 /// </summary>
 /// <typeparam name="TEntity">Entity</typeparam>
 /// <typeparam name="TId">Identifier of entity</typeparam>
-public interface IRepositoryBase<TEntity, TId>
+public interface IRepositoryBase<TEntity, TEntityDto, TId>
 {
     /// <summary>
     /// Get all entities
     /// </summary>
     /// <returns>enumerable of entity</returns>
-    public Task<IEnumerable<TEntity>> GetAllAsync();
+    public Task<IEnumerable<TEntityDto>> GetAllAsync();
 
     /// <summary>
     /// Get entity by id
     /// </summary>
     /// <param name="id">identifier</param>
     /// <returns>return a entity or null</returns>
-    public Task<TEntity> GetByIdOrDefaultAsync(TId id);
+    public Task<TEntityDto> GetByIdOrDefaultAsync(TId id);
 
     /// <summary>
     /// Insert data
@@ -39,5 +39,5 @@ public interface IRepositoryBase<TEntity, TId>
     /// </summary>
     /// <param name="entity">entity to delete</param>
     /// <returns>return entity deleted</returns>
-    public Task<TEntity> DeleteByIdAsync(TId id);
+    public Task<TEntityDto> DeleteByIdAsync(TId id);
 }
