@@ -36,8 +36,9 @@ public sealed class ScrapingService : IScrapingService
             if ((await _scrapingModelRepository.GetByIdOrDefaultAsync(scrapingExecuteMapped.IdScrapingModel)) is null)
                 throw new ConflictTssException($"Scraping model with id {scrapingExecuteMapped.IdScrapingModel} don't exists.");
 
-            scrapingExecuteMapped =
-                await _scrapingExecuteRepository.AddAsync(scrapingExecuteMapped);
+            scrapingExecute =
+                (await _scrapingExecuteRepository.AddAsync(scrapingExecuteMapped)) ??
+                throw new BadRequestTssException("Failed to insert new Scraping Execute.");
 
             await _uoW.SaveChangesAsync();
         }
@@ -54,13 +55,14 @@ public sealed class ScrapingService : IScrapingService
             if ((await _scrapingModelRepository.GetByNameAsync(scrapingModelMapped.NormalizedName)) is not null)
                 throw new ConflictTssException($"Scraping model named by {scrapingModelMapped.Name} already exists.");
 
-            scrapingModelMapped =
-                await _scrapingModelRepository.AddAsync(scrapingModelMapped);
+            scrapingModel =
+                (await _scrapingModelRepository.AddAsync(scrapingModelMapped)) ??
+                throw new BadRequestTssException("Failed to insert new Scraping Model.");
 
             await _uoW.SaveChangesAsync();
         }
 
-        return _mapper.Map<ScrapingModelDto>(scrapingModelMapped);
+        return scrapingModel;
     }
 
     public async Task<IEnumerable<ScrapingExecuteDto>> GetAllScrapingExecuteAsync()

@@ -24,20 +24,20 @@ public interface IRepositoryBase<TEntity, TEntityDto, TId>
     /// Insert data
     /// </summary>
     /// <param name="entity">entity to add</param>
-    /// <returns>return entity inserted</returns>
-    public Task<TEntity> AddAsync(TEntity entity);
+    /// <returns>return entity inserted or null if failed to add</returns>
+    public Task<TEntityDto?> AddAsync(TEntity entity);
 
     /// <summary>
     /// Update data
     /// </summary>
     /// <param name="entity">entity to update</param>
-    /// <returns>return entity updated</returns>
-    public Task<TEntity> UpdateAsync(TEntity entity);
+    /// <returns>return entity inserted or null if failed to add</returns>
+    public Task<TEntityDto?> UpdateAsync(TEntity entity);
 
     /// <summary>
     /// Delete data
     /// </summary>
     /// <param name="entity">entity to delete</param>
-    /// <returns>return entity deleted</returns>
-    public Task<TEntityDto> DeleteByIdAsync(TId id);
+    /// <returns>return entity inserted or null if failed to add</returns>
+    public Task<TEntityDto?> DeleteByIdAsync(TId id);
 }

@@ -39,7 +39,10 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
 
         using (await _uoW.BeginTransactionAsync())
         {
-            taskActionMapped = await _taskActionRepository.AddAsync(taskActionMapped);
+            taskAction =
+                (await _taskActionRepository.AddAsync(taskActionMapped)) ??
+                throw new BadRequestTssException("Failed to insert new Task Action.");
+
             await _uoW.SaveChangesAsync();
         }
 
@@ -55,11 +58,14 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
             if ((await _taskGroupRepository.GetByNameAsync(taskGroupMapped.NormalizedName)) is not null)
                 throw new ConflictTssException($"Task group with name {taskGroupMapped.NormalizedName} already exists.");
 
-            taskGroupMapped = await _taskGroupRepository.AddAsync(taskGroupMapped);
+            taskGroup =
+                (await _taskGroupRepository.AddAsync(taskGroupMapped)) ??
+                throw new BadRequestTssException("Failed to insert new Task Group.");
+
             await _uoW.SaveChangesAsync();
         }
 
-        return _mapper.Map<TaskGroupDto>(taskGroupMapped);
+        return taskGroup;
     }
 
     public async Task<TaskRegistrationDto> AddTaskRegistrationAsync(TaskRegistrationDto taskRegistration)
@@ -71,11 +77,14 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
             if ((await _taskRegistrationRepository.GetByNameAsync(taskRegistrationMapped.NormalizedName)) is not null)
                 throw new ConflictTssException($"Task registration with name {taskRegistrationMapped.NormalizedName} already exists.");
 
-            taskRegistrationMapped = await _taskRegistrationRepository.AddAsync(taskRegistrationMapped);
+            taskRegistration =
+                (await _taskRegistrationRepository.AddAsync(taskRegistrationMapped)) ??
+                throw new BadRequestTssException("Failed to insert new Task Registration.");
+
             await _uoW.SaveChangesAsync();
         }
 
-        return _mapper.Map<TaskRegistrationDto>(taskRegistrationMapped);
+        return taskRegistration;
     }
 
     public async Task<TaskTriggerDto> AddTaskTriggerAsync(TaskTriggerDto taskTrigger)
@@ -84,11 +93,13 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
 
         using (await _uoW.BeginTransactionAsync())
         {
-            taskTriggerMapped = await _taskTriggerRepository.AddAsync(taskTriggerMapped);
+            taskTrigger =
+                (await _taskTriggerRepository.AddAsync(taskTriggerMapped)) ??
+                throw new BadRequestTssException("Failed to insert new task trigger.");
             await _uoW.SaveChangesAsync();
         }
 
-        return _mapper.Map<TaskTriggerDto>(taskTriggerMapped);
+        return taskTrigger;
     }
 
     public async Task<TaskActionDto> DeleteTaskActionAsync(int idTaskAction)
@@ -110,7 +121,7 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
     {
         using (await _uoW.BeginTransactionAsync())
         {
-            var taskGroup = 
+            var taskGroup =
                 await _taskGroupRepository.GetByIdOrDefaultAsync(idTaskGroup) ??
                 throw new NotFoundTssException($"Task Group with Id '{idTaskGroup}' not found.");
 
@@ -125,7 +136,8 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
             foreach (var taskRegistration in taskRegistrations)
                 await WithOutConnDeleteTaskRegistrationAsync(taskRegistration.Id, confirmRelatioshipsDeletion);
 
-            await _taskGroupRepository.DeleteByIdAsync(idTaskGroup);
+            if ((await _taskGroupRepository.DeleteByIdAsync(idTaskGroup)) is null)
+                throw new BadRequestTssException("Failed to delete Task Task Group.");
 
             await _uoW.SaveChangesAsync();
 
@@ -176,7 +188,7 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
     public async Task<TaskGroupDto> GetTaskGroupByNameAsync(string normalizedName)
     {
         using (await _uoW.OpenConnectionAsync())
-            return 
+            return
                 (await _taskGroupRepository.GetByNameAsync(normalizedName)) ??
                 throw new NotFoundTssException($"Task Group named by {normalizedName} could not be found.");
     }
@@ -190,8 +202,8 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
     public async Task<TaskRegistrationDto> GetTaskRegistrationByNameAsync(string normalizedName)
     {
         using (await _uoW.OpenConnectionAsync())
-            return 
-                (await _taskRegistrationRepository.GetByNameAsync(normalizedName)) ?? 
+            return
+                (await _taskRegistrationRepository.GetByNameAsync(normalizedName)) ??
                 throw new NotFoundTssException($"Task Registration named by {normalizedName} could not be found.");
     }
 
@@ -229,6 +241,8 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
         foreach (var taskTrigger in taskTriggers)
             await _taskTriggerRepository.DeleteByIdAsync(taskTrigger.Id);
 
-        return await _taskRegistrationRepository.DeleteByIdAsync(taskRegistration.Id);
+        return
+            (await _taskRegistrationRepository.DeleteByIdAsync(taskRegistration.Id)) ??
+            throw new BadRequestTssException("Failed to delete Task Registration.");
     }
 }
