@@ -5,5 +5,5 @@ namespace TaskSchedulerScraping.Application.Repositories.TaskScheduler;
 
 public interface ITaskGroupRepository : IRepositoryBase<TaskGroup, TaskGroupDto, int>
 {
-    Task<TaskGroupDto> GetByNameAsync(string normalizedName);
+    Task<TaskGroupDto?> GetByNameAsync(string normalizedName);
 }

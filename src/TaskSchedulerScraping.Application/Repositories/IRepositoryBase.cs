@@ -18,7 +18,7 @@ public interface IRepositoryBase<TEntity, TEntityDto, TId>
     /// </summary>
     /// <param name="id">identifier</param>
     /// <returns>return a entity or null</returns>
-    public Task<TEntityDto> GetByIdOrDefaultAsync(TId id);
+    public Task<TEntityDto?> GetByIdOrDefaultAsync(TId id);
 
     /// <summary>
     /// Insert data

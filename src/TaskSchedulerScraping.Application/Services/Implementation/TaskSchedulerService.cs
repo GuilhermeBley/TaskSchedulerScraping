@@ -52,6 +52,9 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
 
         using (await _uoW.BeginTransactionAsync())
         {
+            if ((await _taskGroupRepository.GetByNameAsync(taskGroupMapped.NormalizedName)) is not null)
+                throw new ConflictTssException($"Task group with name {taskGroupMapped.NormalizedName} already exists.");
+
             taskGroupMapped = await _taskGroupRepository.AddAsync(taskGroupMapped);
             await _uoW.SaveChangesAsync();
         }
@@ -65,6 +68,9 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
 
         using (await _uoW.BeginTransactionAsync())
         {
+            if ((await _taskRegistrationRepository.GetByNameAsync(taskRegistrationMapped.NormalizedName)) is not null)
+                throw new ConflictTssException($"Task registration with name {taskRegistrationMapped.NormalizedName} already exists.");
+
             taskRegistrationMapped = await _taskRegistrationRepository.AddAsync(taskRegistrationMapped);
             await _uoW.SaveChangesAsync();
         }
@@ -170,7 +176,9 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
     public async Task<TaskGroupDto> GetTaskGroupByNameAsync(string normalizedName)
     {
         using (await _uoW.OpenConnectionAsync())
-            return await _taskGroupRepository.GetByNameAsync(normalizedName);
+            return 
+                (await _taskGroupRepository.GetByNameAsync(normalizedName)) ??
+                throw new NotFoundTssException($"Task Group named by {normalizedName} could not be found.");
     }
 
     public async Task<IEnumerable<TaskRegistrationDto>> GetTaskRegistrationByGroupAsync(int idTaskGroup)
@@ -182,7 +190,9 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
     public async Task<TaskRegistrationDto> GetTaskRegistrationByNameAsync(string normalizedName)
     {
         using (await _uoW.OpenConnectionAsync())
-            return await _taskRegistrationRepository.GetByNameAsync(normalizedName);
+            return 
+                (await _taskRegistrationRepository.GetByNameAsync(normalizedName)) ?? 
+                throw new NotFoundTssException($"Task Registration named by {normalizedName} could not be found.");
     }
 
     public async Task<IEnumerable<TaskTriggerDto>> GetTaskTriggerByRegistrationAsync(int idTaskRegistration)

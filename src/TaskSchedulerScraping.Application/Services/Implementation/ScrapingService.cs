@@ -36,8 +36,10 @@ public sealed class ScrapingService : IScrapingService
             if ((await _scrapingModelRepository.GetByIdOrDefaultAsync(scrapingExecuteMapped.IdScrapingModel)) is null)
                 throw new ConflictTssException($"Scraping model with id {scrapingExecuteMapped.IdScrapingModel} don't exists.");
 
-            scrapingExecuteMapped = 
+            scrapingExecuteMapped =
                 await _scrapingExecuteRepository.AddAsync(scrapingExecuteMapped);
+
+            await _uoW.SaveChangesAsync();
         }
 
         return _mapper.Map<ScrapingExecuteDto>(scrapingExecuteMapped);
@@ -52,8 +54,10 @@ public sealed class ScrapingService : IScrapingService
             if ((await _scrapingModelRepository.GetByNameAsync(scrapingModelMapped.NormalizedName)) is not null)
                 throw new ConflictTssException($"Scraping model named by {scrapingModelMapped.Name} already exists.");
 
-            scrapingModelMapped = 
+            scrapingModelMapped =
                 await _scrapingModelRepository.AddAsync(scrapingModelMapped);
+
+            await _uoW.SaveChangesAsync();
         }
 
         return _mapper.Map<ScrapingModelDto>(scrapingModelMapped);
@@ -80,6 +84,8 @@ public sealed class ScrapingService : IScrapingService
     public async Task<ScrapingModelDto> GetScrapingModelByNameAsync(string normalizedName)
     {
         using (await _uoW.OpenConnectionAsync())
-            return await _scrapingModelRepository.GetByNameAsync(normalizedName);
+            return
+                (await _scrapingModelRepository.GetByNameAsync(normalizedName)) ??
+                throw new NotFoundTssException($"Scraping model named by {normalizedName} could not be found.");
     }
 }
