@@ -65,6 +65,46 @@ public sealed class ScrapingService : IScrapingService
         return scrapingModel;
     }
 
+    public async Task<ScrapingExecuteDto> DeleteScrapingExecuteByIdAsync(int idScrapingExecute)
+    {
+        ScrapingExecuteDto scrapingExecuteDto;
+
+        using (await _uoW.BeginTransactionAsync())
+        {
+            scrapingExecuteDto = await WithOutConnDeleteScrapingExecuteByIdAsync(idScrapingExecute);
+
+            await _uoW.SaveChangesAsync();
+        }
+
+        return scrapingExecuteDto;
+    }
+
+    public async Task<ScrapingModelDto> DeleteScrapingModelByIdAsync(int idScrapingModel)
+    {
+        ScrapingModelDto scrapingModel;
+
+        using (_uoW.BeginTransactionAsync())
+        {
+            scrapingModel =
+                (await _scrapingModelRepository.GetByIdOrDefaultAsync(idScrapingModel)) ??
+                throw new NotFoundTssException($"Scraping model with id {idScrapingModel} could not be found.");
+
+            var scrapingExecutions = await _scrapingExecuteRepository.GetAllByModelAsync(scrapingModel.Id);
+
+            foreach (var scrapingExecute in scrapingExecutions)
+            {
+                await WithOutConnDeleteScrapingExecuteByIdAsync(scrapingExecute.Id);
+            }
+
+            if ((await _scrapingModelRepository.DeleteByIdAsync(scrapingModel.Id)) is null)
+                throw new BadRequestTssException("Failed to delete scraping model.");
+
+            await _uoW.SaveChangesAsync();
+        }
+
+        return scrapingModel;
+    }
+
     public async Task<IEnumerable<ScrapingExecuteDto>> GetAllScrapingExecuteAsync()
     {
         using (await _uoW.OpenConnectionAsync())
@@ -89,5 +129,16 @@ public sealed class ScrapingService : IScrapingService
             return
                 (await _scrapingModelRepository.GetByNameAsync(normalizedName)) ??
                 throw new NotFoundTssException($"Scraping model named by {normalizedName} could not be found.");
+    }
+
+    private async Task<ScrapingExecuteDto> WithOutConnDeleteScrapingExecuteByIdAsync(int idScrapingExecute)
+    {
+        ScrapingExecuteDto scrapingExecute =
+            (await _scrapingExecuteRepository.GetByIdOrDefaultAsync(idScrapingExecute)) ??
+            throw new NotFoundTssException($"Scraping execute with id {idScrapingExecute} could not be found.");
+
+        return
+            (await _scrapingExecuteRepository.DeleteByIdAsync(scrapingExecute.Id)) ??
+            throw new BadRequestTssException("Failed to delete Scraping Execute.");
     }
 }
