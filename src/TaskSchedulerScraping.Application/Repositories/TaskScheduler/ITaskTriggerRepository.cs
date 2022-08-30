@@ -5,5 +5,5 @@ namespace TaskSchedulerScraping.Application.Repositories.TaskScheduler;
 
 public interface ITaskTriggerRepository : IRepositoryBase<TaskTrigger, TaskTriggerDto, int>
 {
-
+    Task<IEnumerable<TaskTriggerDto>> GetAllByRegistrationAsync(int idTaskRegistration);
 }

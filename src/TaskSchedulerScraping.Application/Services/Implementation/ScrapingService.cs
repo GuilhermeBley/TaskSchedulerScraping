@@ -1,8 +1,10 @@
 using AutoMapper;
 using TaskSchedulerScraping.Application.Dto.Scraping;
+using TaskSchedulerScraping.Application.Exceptions;
 using TaskSchedulerScraping.Application.Repositories.Scraping;
 using TaskSchedulerScraping.Application.Services.Interfaces;
 using TaskSchedulerScraping.Application.UoW;
+using TaskSchedulerScraping.Domain.Entities.Scraping;
 
 namespace TaskSchedulerScraping.Application.Services.Implementation;
 
@@ -25,33 +27,59 @@ public sealed class ScrapingService : IScrapingService
         _mapper = mapper;
     }
 
-    public Task<ScrapingExecuteDto> AddScrapingExecuteAsync(ScrapingExecuteDto scrapingExecute)
+    public async Task<ScrapingExecuteDto> AddScrapingExecuteAsync(ScrapingExecuteDto scrapingExecute)
     {
-        throw new NotImplementedException();
+        var scrapingExecuteMapped = _mapper.Map<ScrapingExecute>(scrapingExecute);
+
+        using (_uoW.BeginTransactionAsync())
+        {
+            if ((await _scrapingModelRepository.GetByIdOrDefaultAsync(scrapingExecuteMapped.IdScrapingModel)) is null)
+                throw new ConflictTssException($"Scraping model with id {scrapingExecuteMapped.IdScrapingModel} don't exists.");
+
+            scrapingExecuteMapped = 
+                await _scrapingExecuteRepository.AddAsync(scrapingExecuteMapped);
+        }
+
+        return _mapper.Map<ScrapingExecuteDto>(scrapingExecuteMapped);
     }
 
-    public Task<ScrapingModelDto> AddScrapingModelAsync(ScrapingModelDto scrapingModel)
+    public async Task<ScrapingModelDto> AddScrapingModelAsync(ScrapingModelDto scrapingModel)
     {
-        throw new NotImplementedException();
+        var scrapingModelMapped = _mapper.Map<ScrapingModel>(scrapingModel);
+
+        using (_uoW.BeginTransactionAsync())
+        {
+            if ((await _scrapingModelRepository.GetByNameAsync(scrapingModelMapped.NormalizedName)) is not null)
+                throw new ConflictTssException($"Scraping model named by {scrapingModelMapped.Name} already exists.");
+
+            scrapingModelMapped = 
+                await _scrapingModelRepository.AddAsync(scrapingModelMapped);
+        }
+
+        return _mapper.Map<ScrapingModelDto>(scrapingModelMapped);
     }
 
-    public Task<IEnumerable<ScrapingExecuteDto>> GetAllScrapingExecuteAsync()
+    public async Task<IEnumerable<ScrapingExecuteDto>> GetAllScrapingExecuteAsync()
     {
-        throw new NotImplementedException();
+        using (await _uoW.OpenConnectionAsync())
+            return await _scrapingExecuteRepository.GetAllAsync();
     }
 
-    public Task<IEnumerable<ScrapingExecuteDto>> GetAllScrapingExecuteByModelAsync(int idScrapingModel)
+    public async Task<IEnumerable<ScrapingExecuteDto>> GetAllScrapingExecuteByModelAsync(int idScrapingModel)
     {
-        throw new NotImplementedException();
+        using (await _uoW.OpenConnectionAsync())
+            return await _scrapingExecuteRepository.GetAllByModelAsync(idScrapingModel);
     }
 
-    public Task<IEnumerable<ScrapingModelDto>> GetAllScrapingModelAsync()
+    public async Task<IEnumerable<ScrapingModelDto>> GetAllScrapingModelAsync()
     {
-        throw new NotImplementedException();
+        using (await _uoW.OpenConnectionAsync())
+            return await _scrapingModelRepository.GetAllAsync();
     }
 
-    public Task<ScrapingModelDto> GetScrapingModelByNameAsync(string normalizedName)
+    public async Task<ScrapingModelDto> GetScrapingModelByNameAsync(string normalizedName)
     {
-        throw new NotImplementedException();
+        using (await _uoW.OpenConnectionAsync())
+            return await _scrapingModelRepository.GetByNameAsync(normalizedName);
     }
 }
