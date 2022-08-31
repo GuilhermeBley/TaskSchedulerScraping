@@ -5,5 +5,5 @@ namespace TaskSchedulerScraping.Application.Repositories.TaskScheduler;
 
 public interface ITaskOnScheduleRepository : IRepositoryBase<TaskOnSchedule, TaskOnScheduleDto, int>
 {
-    Task<TaskGroupDto?> TryAddAsync(TaskOnSchedule taskGroup);
+    Task<TaskOnScheduleDto?> TryAddAsync(TaskOnSchedule taskOnSchedule);
 }
