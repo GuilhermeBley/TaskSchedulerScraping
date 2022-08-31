@@ -15,7 +15,7 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
     private readonly ITaskTriggerRepository _taskTriggerRepository;
     private readonly ITaskRegistrationRepository _taskRegistrationRepository;
     private readonly IUnitOfWork _uoW;
-    private readonly Mapper _mapper;
+    private readonly IMapper _mapper;
 
     public TaskSchedulerService(
         ITaskGroupRepository taskGroupRepository,
@@ -23,7 +23,7 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
         ITaskTriggerRepository taskTriggerRepository,
         ITaskRegistrationRepository taskRegistrationRepository,
         IUnitOfWork uoW,
-        Mapper mapper)
+        IMapper mapper)
     {
         _taskGroupRepository = taskGroupRepository;
         _taskActionRepository = taskActionRepository;
