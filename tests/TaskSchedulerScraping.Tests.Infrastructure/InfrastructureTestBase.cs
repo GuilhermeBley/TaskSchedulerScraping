@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using TaskSchedulerScraping.Infrastructure.Extensions.IoC;
 
 namespace TaskSchedulerScraping.Tests.Infrastructure;

@@ -29,4 +29,8 @@
     <ProjectReference Include="..\..\src\TaskSchedulerScraping.Infrastructure\TaskSchedulerScraping.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+        <None Include="appsettings.Development.json" CopyToOutputDirectory="Always" />
+    </ItemGroup>
+
 </Project>
