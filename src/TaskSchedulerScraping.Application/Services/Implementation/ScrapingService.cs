@@ -91,7 +91,7 @@ public sealed class ScrapingService : IScrapingService
 
             var scrapingExecutions = await _scrapingExecuteRepository.GetAllByModelAsync(scrapingModel.Id);
 
-            if (scrapingExecutions.Any() & !confirmDeleteRelationalExecute)
+            if (scrapingExecutions.Any() && !confirmDeleteRelationalExecute)
                 throw new BadRequestTssException($"Has related data in Scraping Execute with Scraping Model '{scrapingModel.Name}'," +
                 " please add a confirmation relatioships deletion or delete manually.");
 

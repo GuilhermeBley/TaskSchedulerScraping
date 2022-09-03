@@ -27,7 +27,7 @@ public class ServiceScrapingTest : InfrastructureTestBase
             new Application.Dto.Scraping.ScrapingModelDto()
             {
                 Description = "Test",
-                Name = nameof(Model_AddAndDeleteWithExecuting_OnException)
+                Name = nameof(Model_AddAndDelete_AddAndDeleteModel)
             };
 
         var modelCreate = await _scrapingService.AddScrapingModelAsync(entity);
@@ -40,14 +40,14 @@ public class ServiceScrapingTest : InfrastructureTestBase
     }
 
     [Fact]
-    public async Task Model_AddAndDeleteWithExecuting_OnException()
+    public async Task Model_AddAndDeleteWithExecuting_OnBadRequestTssException()
     {
         var modelCreate = 
             await _scrapingService.AddScrapingModelAsync(
                 new Application.Dto.Scraping.ScrapingModelDto()
                 {
                     Description = "Test",
-                    Name = nameof(Model_AddAndDeleteWithExecuting_OnException)
+                    Name = "OnBadRequestTssException"
                 }
             );
 
@@ -66,6 +66,45 @@ public class ServiceScrapingTest : InfrastructureTestBase
         await Assert.ThrowsAnyAsync<Application.Exceptions.BadRequestTssException>(()=> _scrapingService.DeleteScrapingModelByIdAsync(modelCreate.Id));
 
         var modelDeleted = await _scrapingService.DeleteScrapingModelByIdAsync(modelCreate.Id, true);
+
+        Assert.NotNull(modelDeleted);
+    }
+
+    [Fact]
+    public async Task Model_AddAndDeleteWithExecuting_OnFiveExecuteDeleted()
+    {
+        var modelCreate = 
+            await _scrapingService.AddScrapingModelAsync(
+                new Application.Dto.Scraping.ScrapingModelDto()
+                {
+                    Description = "Test",
+                    Name = "OnFiveExecuteDeleted"
+                }
+            );
+
+        Assert.NotNull(modelCreate);
+
+        for (var i = 0; i < 5; i++)
+        {
+            var executeCreate =
+                await _scrapingService.AddScrapingExecuteAsync(
+                    new Application.Dto.Scraping.ScrapingExecuteDto()
+                    {
+                        IdScrapingModel = modelCreate.Id,
+                        StartAt = DateTime.Now,
+                        EndAt = DateTime.Now.AddDays(1),
+                    }
+                );
+        }
+        var countExecuteCreate = (await _scrapingService.GetAllScrapingExecuteByModelAsync(modelCreate.Id)).Count();
+        Assert.Equal(
+            5,
+            countExecuteCreate
+        );
+
+        var modelDeleted = await _scrapingService.DeleteScrapingModelByIdAsync(modelCreate.Id, true);
+
+        await Assert.ThrowsAnyAsync<Application.Exceptions.NotFoundTssException>(() => _scrapingService.GetScrapingModelByNameAsync(modelCreate.Name));
 
         Assert.NotNull(modelDeleted);
     }
