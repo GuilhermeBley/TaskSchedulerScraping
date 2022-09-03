@@ -46,7 +46,7 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
             await _uoW.SaveChangesAsync();
         }
 
-        return _mapper.Map<TaskActionDto>(taskActionMapped);
+        return taskAction;
     }
 
     public async Task<TaskGroupDto> AddTaskGroupAsync(TaskGroupDto taskGroup)

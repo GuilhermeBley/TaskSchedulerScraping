@@ -43,7 +43,7 @@ public sealed class ScrapingService : IScrapingService
             await _uoW.SaveChangesAsync();
         }
 
-        return _mapper.Map<ScrapingExecuteDto>(scrapingExecuteMapped);
+        return scrapingExecute;
     }
 
     public async Task<ScrapingModelDto> AddScrapingModelAsync(ScrapingModelDto scrapingModel)
