@@ -8,7 +8,7 @@ public interface IScrapingService
     Task<ScrapingModelDto> AddScrapingModelAsync(ScrapingModelDto scrapingModel);
 
     Task<ScrapingExecuteDto> DeleteScrapingExecuteByIdAsync(int idScrapingExecute);
-    Task<ScrapingModelDto> DeleteScrapingModelByIdAsync(int idScrapingModel);
+    Task<ScrapingModelDto> DeleteScrapingModelByIdAsync(int idScrapingModel, bool confirmDeleteRelationalExecute = false);
 
     Task<IEnumerable<ScrapingExecuteDto>> GetAllScrapingExecuteAsync();
     Task<IEnumerable<ScrapingExecuteDto>> GetAllScrapingExecuteByModelAsync(int idScrapingModel);

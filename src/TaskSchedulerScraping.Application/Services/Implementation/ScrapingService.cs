@@ -79,7 +79,7 @@ public sealed class ScrapingService : IScrapingService
         return scrapingExecuteDto;
     }
 
-    public async Task<ScrapingModelDto> DeleteScrapingModelByIdAsync(int idScrapingModel)
+    public async Task<ScrapingModelDto> DeleteScrapingModelByIdAsync(int idScrapingModel, bool confirmDeleteRelationalExecute = false)
     {
         ScrapingModelDto scrapingModel;
 
@@ -90,6 +90,10 @@ public sealed class ScrapingService : IScrapingService
                 throw new NotFoundTssException($"Scraping model with id {idScrapingModel} could not be found.");
 
             var scrapingExecutions = await _scrapingExecuteRepository.GetAllByModelAsync(scrapingModel.Id);
+
+            if (scrapingExecutions.Any() & !confirmDeleteRelationalExecute)
+                throw new BadRequestTssException($"Has related data in Scraping Execute with Scraping Model '{scrapingModel.Name}'," +
+                " please add a confirmation relatioships deletion or delete manually.");
 
             foreach (var scrapingExecute in scrapingExecutions)
             {
