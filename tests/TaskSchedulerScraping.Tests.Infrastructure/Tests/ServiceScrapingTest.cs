@@ -38,4 +38,35 @@ public class ServiceScrapingTest : InfrastructureTestBase
 
         Assert.NotNull(modelDeleted);
     }
+
+    [Fact]
+    public async Task Model_AddAndDeleteWithExecuting_OnException()
+    {
+        var modelCreate = 
+            await _scrapingService.AddScrapingModelAsync(
+                new Application.Dto.Scraping.ScrapingModelDto()
+                {
+                    Description = "Test",
+                    Name = "TestI"
+                }
+            );
+
+        Assert.NotNull(modelCreate);
+
+        var executeCreate = 
+            await _scrapingService.AddScrapingExecuteAsync(
+                new Application.Dto.Scraping.ScrapingExecuteDto()
+                {
+                    IdScrapingModel = modelCreate.Id,
+                    StartAt = DateTime.Now,
+                    EndAt = DateTime.Now.AddDays(1),
+                }
+            );
+
+        await Assert.ThrowsAnyAsync<Application.Exceptions.BadRequestTssException>(()=> _scrapingService.DeleteScrapingModelByIdAsync(modelCreate.Id));
+
+        var modelDeleted = await _scrapingService.DeleteScrapingModelByIdAsync(modelCreate.Id, true);
+
+        Assert.NotNull(modelDeleted);
+    }
 }
