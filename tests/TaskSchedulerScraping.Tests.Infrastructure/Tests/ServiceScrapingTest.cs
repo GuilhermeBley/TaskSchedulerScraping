@@ -27,7 +27,7 @@ public class ServiceScrapingTest : InfrastructureTestBase
             new Application.Dto.Scraping.ScrapingModelDto()
             {
                 Description = "Test",
-                Name = "Test"
+                Name = nameof(Model_AddAndDeleteWithExecuting_OnException)
             };
 
         var modelCreate = await _scrapingService.AddScrapingModelAsync(entity);
@@ -47,7 +47,7 @@ public class ServiceScrapingTest : InfrastructureTestBase
                 new Application.Dto.Scraping.ScrapingModelDto()
                 {
                     Description = "Test",
-                    Name = "TestI"
+                    Name = nameof(Model_AddAndDeleteWithExecuting_OnException)
                 }
             );
 

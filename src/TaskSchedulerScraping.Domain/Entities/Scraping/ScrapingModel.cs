@@ -34,7 +34,7 @@ public class ScrapingModel
         if (string.IsNullOrEmpty(name))
             execeptions.Add($"Has null or empty required strings.");
 
-        if (!name.All(char.IsLetter))
+        if (!name.All(character=>(char.IsLetter(character) || character == '_')))
             execeptions.Add($"{nameof(name)} must be have only letters.");
 
         if (execeptions.Any())
