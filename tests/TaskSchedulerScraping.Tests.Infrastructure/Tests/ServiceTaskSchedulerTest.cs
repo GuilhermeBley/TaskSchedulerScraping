@@ -37,6 +37,7 @@ public class ServiceTaskSchedulerTest : InfrastructureTestBase
 
     public async Task OnSchedule_TryAdd_AllOnSchedulesValues()
     {
+        await Task.CompletedTask;
         throw new NotImplementedException();
     }
 

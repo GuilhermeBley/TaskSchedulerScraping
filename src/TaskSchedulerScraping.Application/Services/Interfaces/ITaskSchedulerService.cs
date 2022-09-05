@@ -4,6 +4,7 @@ namespace TaskSchedulerScraping.Application.Services.Interfaces;
 
 public interface ITaskSchedulerService
 {
+    Task<IEnumerable<TaskOnScheduleDto>> AddAllOnShceduleAsync();
     Task<TaskActionDto> AddTaskActionAsync(TaskActionDto taskAction);
     Task<TaskGroupDto> AddTaskGroupAsync(TaskGroupDto taskGroup);
     Task<TaskRegistrationDto> AddTaskRegistrationAsync(TaskRegistrationDto taskRegistration);
@@ -15,6 +16,7 @@ public interface ITaskSchedulerService
     Task<TaskTriggerDto> DeleteTaskTriggerAsync(int idTaskTrigger);
 
     Task<IEnumerable<TaskGroupDto>> GetAllTaskGroupAsync();
+    Task<IEnumerable<TaskOnScheduleDto>> GetAllOnScheduleAsync();
     Task<TaskGroupDto> GetTaskGroupByNameAsync(string normalizedName);
     Task<IEnumerable<TaskActionDto>> GetTaskActionByRegistrationAsync(int idTaskRegistration);
     Task<IEnumerable<TaskRegistrationDto>> GetTaskRegistrationByGroupAsync(int idTaskGroup);

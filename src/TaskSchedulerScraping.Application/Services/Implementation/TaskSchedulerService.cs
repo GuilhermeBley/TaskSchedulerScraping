@@ -14,14 +14,17 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
     private readonly ITaskActionRepository _taskActionRepository;
     private readonly ITaskTriggerRepository _taskTriggerRepository;
     private readonly ITaskRegistrationRepository _taskRegistrationRepository;
+    private readonly ITaskOnScheduleRepository _taskOnScheduleRepository;
     private readonly IUnitOfWork _uoW;
     private readonly IMapper _mapper;
+    private static readonly IEnumerable<TaskOnScheduleDto> _allOnSchedule = GetAllOnScheduleStatic();
 
     public TaskSchedulerService(
         ITaskGroupRepository taskGroupRepository,
         ITaskActionRepository taskActionRepository,
         ITaskTriggerRepository taskTriggerRepository,
         ITaskRegistrationRepository taskRegistrationRepository,
+        ITaskOnScheduleRepository taskOnScheduleRepository,
         IUnitOfWork uoW,
         IMapper mapper)
     {
@@ -29,8 +32,22 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
         _taskActionRepository = taskActionRepository;
         _taskTriggerRepository = taskTriggerRepository;
         _taskRegistrationRepository = taskRegistrationRepository;
+        _taskOnScheduleRepository = taskOnScheduleRepository;
         _uoW = uoW;
         _mapper = mapper;
+    }
+
+    public async Task<IEnumerable<TaskOnScheduleDto>> AddAllOnShceduleAsync()
+    {
+        var listOnSchedule = _allOnSchedule.Select(dto => _mapper.Map<TaskOnSchedule>(dto));
+
+        using (await _uoW.BeginTransactionAsync())
+            foreach (var onSchedule in listOnSchedule)
+            {
+                await _taskOnScheduleRepository.TryAddAsync(onSchedule);
+            }
+
+        return _allOnSchedule;
     }
 
     public async Task<TaskActionDto> AddTaskActionAsync(TaskActionDto taskAction)
@@ -173,6 +190,12 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
         }
     }
 
+    public async Task<IEnumerable<TaskOnScheduleDto>> GetAllOnScheduleAsync()
+    {
+        await Task.CompletedTask;
+        return _allOnSchedule;
+    }
+
     public async Task<IEnumerable<TaskGroupDto>> GetAllTaskGroupAsync()
     {
         using (await _uoW.OpenConnectionAsync())
@@ -244,5 +267,31 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
         return
             (await _taskRegistrationRepository.DeleteByIdAsync(taskRegistration.Id)) ??
             throw new BadRequestTssException("Failed to delete Task Registration.");
+    }
+
+    private static IEnumerable<TaskOnScheduleDto> GetAllOnScheduleStatic()
+    {
+        var listTaskOnSchedule = new List<TaskOnScheduleDto>();
+        listTaskOnSchedule.Add(new TaskOnScheduleDto
+            {
+                Id = 1,
+                Name = "One Time"
+            });
+        listTaskOnSchedule.Add(new TaskOnScheduleDto
+            {
+                Id = 2,
+                Name = "Daily"
+            });
+        listTaskOnSchedule.Add(new TaskOnScheduleDto
+            {
+                Id = 3,
+                Name = "Weekly"
+            });
+        listTaskOnSchedule.Add(new TaskOnScheduleDto
+            {
+                Id = 4,
+                Name = "Monthly"
+            });
+        return listTaskOnSchedule;
     }
 }
