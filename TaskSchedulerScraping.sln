@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A73E0DA3
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulerScraping.Infrastructure.Tests", "tests\TaskSchedulerScraping.Infrastructure.Tests\TaskSchedulerScraping.Infrastructure.Tests.csproj", "{FB75EE4B-4377-4B77-87FF-2BEAF2947898}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulerScraping.Scraper", "src\TaskSchedulerScraping.Scraper\TaskSchedulerScraping.Scraper.csproj", "{C2524A28-0482-40E6-B2C8-E89173DCC258}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +48,10 @@ Global
 		{FB75EE4B-4377-4B77-87FF-2BEAF2947898}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FB75EE4B-4377-4B77-87FF-2BEAF2947898}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FB75EE4B-4377-4B77-87FF-2BEAF2947898}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2524A28-0482-40E6-B2C8-E89173DCC258}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2524A28-0482-40E6-B2C8-E89173DCC258}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2524A28-0482-40E6-B2C8-E89173DCC258}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2524A28-0482-40E6-B2C8-E89173DCC258}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{510C8861-521C-4448-A0FB-F34959FFB374} = {E126F91B-C894-4635-8882-D1C80EC06096}
@@ -53,5 +59,6 @@ Global
 		{B63EA7E0-89AA-4B6B-829F-A5994CB40A26} = {E126F91B-C894-4635-8882-D1C80EC06096}
 		{8E5F0CDA-B79C-4A71-8BF5-90E07529716B} = {E126F91B-C894-4635-8882-D1C80EC06096}
 		{FB75EE4B-4377-4B77-87FF-2BEAF2947898} = {A73E0DA3-5CA6-4294-9507-A6582B88A08B}
+		{C2524A28-0482-40E6-B2C8-E89173DCC258} = {E126F91B-C894-4635-8882-D1C80EC06096}
 	EndGlobalSection
 EndGlobal
