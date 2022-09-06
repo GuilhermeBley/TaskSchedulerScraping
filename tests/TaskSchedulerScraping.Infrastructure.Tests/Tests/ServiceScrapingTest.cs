@@ -8,7 +8,7 @@ public class ServiceScrapingTest : InfrastructureTestBase
 
     public ServiceScrapingTest()
     {
-        _scrapingService = _serviceProvider.GetService<IScrapingService>() ?? 
+        _scrapingService = _serviceProvider.GetService<IScrapingService>() ??
             throw new ArgumentNullException(nameof(IScrapingService));
     }
 
@@ -42,7 +42,7 @@ public class ServiceScrapingTest : InfrastructureTestBase
     [Fact]
     public async Task Model_AddAndDeleteWithExecuting_OnBadRequestTssException()
     {
-        var modelCreate = 
+        var modelCreate =
             await _scrapingService.AddScrapingModelAsync(
                 new Application.Dto.Scraping.ScrapingModelDto()
                 {
@@ -53,7 +53,7 @@ public class ServiceScrapingTest : InfrastructureTestBase
 
         Assert.NotNull(modelCreate);
 
-        var executeCreate = 
+        var executeCreate =
             await _scrapingService.AddScrapingExecuteAsync(
                 new Application.Dto.Scraping.ScrapingExecuteDto()
                 {
@@ -63,7 +63,7 @@ public class ServiceScrapingTest : InfrastructureTestBase
                 }
             );
 
-        await Assert.ThrowsAnyAsync<Application.Exceptions.BadRequestTssException>(()=> _scrapingService.DeleteScrapingModelByIdAsync(modelCreate.Id));
+        await Assert.ThrowsAnyAsync<Application.Exceptions.BadRequestTssException>(() => _scrapingService.DeleteScrapingModelByIdAsync(modelCreate.Id));
 
         var modelDeleted = await _scrapingService.DeleteScrapingModelByIdAsync(modelCreate.Id, true);
 
@@ -73,7 +73,7 @@ public class ServiceScrapingTest : InfrastructureTestBase
     [Fact]
     public async Task Model_AddAndDeleteWithExecuting_OnFiveExecuteDeleted()
     {
-        var modelCreate = 
+        var modelCreate =
             await _scrapingService.AddScrapingModelAsync(
                 new Application.Dto.Scraping.ScrapingModelDto()
                 {

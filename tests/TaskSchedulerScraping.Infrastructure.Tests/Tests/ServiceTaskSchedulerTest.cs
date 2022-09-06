@@ -5,7 +5,7 @@ namespace TaskSchedulerScraping.Infrastructure.Tests.Tests;
 public class ServiceTaskSchedulerTest : InfrastructureTestBase
 {
     private readonly ITaskSchedulerService _taskSchedulerService;
-
+    
     public ServiceTaskSchedulerTest()
     {
         _taskSchedulerService = _serviceProvider.GetService<ITaskSchedulerService>() ??
@@ -45,7 +45,7 @@ public class ServiceTaskSchedulerTest : InfrastructureTestBase
     [Fact]
     public async Task Registration_AddAndDelete_AddTwoRegistrationSucess()
     {
-        var name = "AddAndDelete_AddAndDeleteSucess";
+        var name = "AddAndDelete_AddTwoRegistrationSucess";
 
         var group = await _taskSchedulerService.GetTaskGroupByNameAsync(name);
 
@@ -104,7 +104,7 @@ public class ServiceTaskSchedulerTest : InfrastructureTestBase
                 StartIn = "time",
                 UpdateAt = DateTime.Now
             };
-        var trigger = 
+        var trigger =
             new Application.Dto.TaskScheduler.TaskTriggerDto
             {
                 Enabled = true,
