@@ -9,6 +9,10 @@ public class TaskAction
     public DateTime UpdateAt { get; private set; }
     public string ProgramOrScript { get; private set; } = string.Empty;
     public string Args { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Where program initializes
+    /// </summary>
     public string StartIn { get; private set; } = string.Empty;
 
     private TaskAction(
