@@ -13,6 +13,6 @@ public interface IScrapingService
     Task<IEnumerable<ScrapingExecuteDto>> GetAllScrapingExecuteAsync();
     Task<IEnumerable<ScrapingExecuteDto>> GetAllScrapingExecuteByModelAsync(int idScrapingModel);
     Task<IEnumerable<ScrapingModelDto>> GetAllScrapingModelAsync();
-    Task<ScrapingModelDto> GetScrapingModelByNameAsync(string normalizedName);
+    Task<ScrapingModelDto?> GetScrapingModelByNameAsync(string normalizedName);
     
 }

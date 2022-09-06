@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using TaskSchedulerScraping.Infrastructure.Extensions.IoC;
 
-namespace TaskSchedulerScraping.Tests.Infrastructure;
+namespace TaskSchedulerScraping.Infrastructure.Tests;
 
 public class InfrastructureTestBase
 {

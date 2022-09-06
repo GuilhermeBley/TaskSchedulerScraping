@@ -127,12 +127,11 @@ public sealed class ScrapingService : IScrapingService
             return await _scrapingModelRepository.GetAllAsync();
     }
 
-    public async Task<ScrapingModelDto> GetScrapingModelByNameAsync(string normalizedName)
+    public async Task<ScrapingModelDto?> GetScrapingModelByNameAsync(string normalizedName)
     {
         using (await _uoW.OpenConnectionAsync())
             return
-                (await _scrapingModelRepository.GetByNameAsync(normalizedName)) ??
-                throw new NotFoundTssException($"Scraping model named by {normalizedName} could not be found.");
+                await _scrapingModelRepository.GetByNameAsync(normalizedName);
     }
 
     private async Task<ScrapingExecuteDto> WithOutConnDeleteScrapingExecuteByIdAsync(int idScrapingExecute)

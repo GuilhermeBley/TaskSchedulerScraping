@@ -213,12 +213,11 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
             return await _taskActionRepository.GetAllByRegistrationAsync(idTaskRegistration);
     }
 
-    public async Task<TaskGroupDto> GetTaskGroupByNameAsync(string normalizedName)
+    public async Task<TaskGroupDto?> GetTaskGroupByNameAsync(string normalizedName)
     {
         using (await _uoW.OpenConnectionAsync())
             return
-                (await _taskGroupRepository.GetByNameAsync(normalizedName)) ??
-                throw new NotFoundTssException($"Task Group named by {normalizedName} could not be found.");
+                await _taskGroupRepository.GetByNameAsync(normalizedName);
     }
 
     public async Task<IEnumerable<TaskRegistrationDto>> GetTaskRegistrationByGroupAsync(int idTaskGroup)
@@ -227,12 +226,11 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
             return await _taskRegistrationRepository.GetByGroupAsync(idTaskGroup);
     }
 
-    public async Task<TaskRegistrationDto> GetTaskRegistrationByNameAsync(string normalizedName)
+    public async Task<TaskRegistrationDto?> GetTaskRegistrationByNameAsync(string normalizedName)
     {
         using (await _uoW.OpenConnectionAsync())
             return
-                (await _taskRegistrationRepository.GetByNameAsync(normalizedName)) ??
-                throw new NotFoundTssException($"Task Registration named by {normalizedName} could not be found.");
+                await _taskRegistrationRepository.GetByNameAsync(normalizedName);
     }
 
     public async Task<IEnumerable<TaskTriggerDto>> GetTaskTriggerByRegistrationAsync(int idTaskRegistration)

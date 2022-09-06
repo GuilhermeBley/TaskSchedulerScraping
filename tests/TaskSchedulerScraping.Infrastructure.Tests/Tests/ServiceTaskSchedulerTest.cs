@@ -1,6 +1,6 @@
 using TaskSchedulerScraping.Application.Services.Interfaces;
 
-namespace TaskSchedulerScraping.Tests.Infrastructure.Tests;
+namespace TaskSchedulerScraping.Infrastructure.Tests.Tests;
 
 public class ServiceTaskSchedulerTest : InfrastructureTestBase
 {
@@ -68,7 +68,7 @@ public class ServiceTaskSchedulerTest : InfrastructureTestBase
                 Description = "Test",
                 IdTaskGroup = group.Id,
                 Location = "Hear",
-                Name = "registration1"
+                Name = "registrationI"
             };
 
         var registration2 =
@@ -78,7 +78,7 @@ public class ServiceTaskSchedulerTest : InfrastructureTestBase
                Description = "Test",
                IdTaskGroup = group.Id,
                Location = "Hear",
-               Name = "registration2"
+               Name = "registrationII"
            };
 
         var findRegistration1 = await _taskSchedulerService.GetTaskRegistrationByNameAsync(registration1.Name);
@@ -109,7 +109,9 @@ public class ServiceTaskSchedulerTest : InfrastructureTestBase
                 Enabled = true,
                 Expire = null,
                 IdTaskOnSchedule = 1,
-                UpdateAt = DateTime.Now
+                UpdateAt = DateTime.Now,
+                IdTaskRegistration = registration1.Id,
+                Start = DateTime.Now
             };
 
         Assert.NotNull(await _taskSchedulerService.AddTaskActionAsync(action));

@@ -17,9 +17,9 @@ public interface ITaskSchedulerService
 
     Task<IEnumerable<TaskGroupDto>> GetAllTaskGroupAsync();
     Task<IEnumerable<TaskOnScheduleDto>> GetAllOnScheduleAsync();
-    Task<TaskGroupDto> GetTaskGroupByNameAsync(string normalizedName);
+    Task<TaskGroupDto?> GetTaskGroupByNameAsync(string normalizedName);
     Task<IEnumerable<TaskActionDto>> GetTaskActionByRegistrationAsync(int idTaskRegistration);
     Task<IEnumerable<TaskRegistrationDto>> GetTaskRegistrationByGroupAsync(int idTaskGroup);
-    Task<TaskRegistrationDto> GetTaskRegistrationByNameAsync(string normalizedName);
+    Task<TaskRegistrationDto?> GetTaskRegistrationByNameAsync(string normalizedName);
     Task<IEnumerable<TaskTriggerDto>> GetTaskTriggerByRegistrationAsync(int idTaskRegistration);
 }
