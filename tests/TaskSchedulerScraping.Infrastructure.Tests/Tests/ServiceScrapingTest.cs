@@ -103,8 +103,7 @@ public class ServiceScrapingTest : InfrastructureTestBase
         );
 
         var modelDeleted = await _scrapingService.DeleteScrapingModelByIdAsync(modelCreate.Id, true);
-
-        await Assert.ThrowsAnyAsync<Application.Exceptions.NotFoundTssException>(() => _scrapingService.GetScrapingModelByNameAsync(modelCreate.Name));
+        var verifyModel = await _scrapingService.GetScrapingModelByNameAsync(modelCreate.Name);
 
         Assert.NotNull(modelDeleted);
     }

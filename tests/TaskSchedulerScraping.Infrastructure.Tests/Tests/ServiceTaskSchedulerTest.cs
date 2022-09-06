@@ -12,6 +12,7 @@ public class ServiceTaskSchedulerTest : InfrastructureTestBase
             throw new ArgumentNullException(nameof(ITaskSchedulerService));
     }
 
+    [Fact]
     public async Task Group_AddAndDelete_AddAndDeleteSucess()
     {
         var name = "AddAndDelete_AddAndDeleteSucess";
