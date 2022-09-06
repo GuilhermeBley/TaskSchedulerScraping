@@ -42,12 +42,17 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
         var listOnSchedule = _allOnSchedule.Select(dto => _mapper.Map<TaskOnSchedule>(dto));
 
         using (await _uoW.BeginTransactionAsync())
+        {
             foreach (var onSchedule in listOnSchedule)
             {
                 await _taskOnScheduleRepository.TryAddAsync(onSchedule);
             }
 
-        return _allOnSchedule;
+            await _uoW.SaveChangesAsync();
+        }
+
+        using (await _uoW.OpenConnectionAsync())
+            return await _taskOnScheduleRepository.GetAllAsync();
     }
 
     public async Task<TaskActionDto> AddTaskActionAsync(TaskActionDto taskAction)
@@ -275,7 +280,7 @@ public sealed class TaskSchedulerService : ITaskSchedulerService
         listTaskOnSchedule.Add(new TaskOnScheduleDto
             {
                 Id = 1,
-                Name = "One Time"
+                Name = "OneTime"
             });
         listTaskOnSchedule.Add(new TaskOnScheduleDto
             {

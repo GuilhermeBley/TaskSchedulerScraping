@@ -35,12 +35,13 @@ public class ServiceTaskSchedulerTest : InfrastructureTestBase
         Assert.NotNull(removed);
     }
 
+    [Fact]
     public async Task OnSchedule_TryAdd_AllOnSchedulesValues()
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException();
+        Assert.True((await _taskSchedulerService.AddAllOnShceduleAsync()).Count() == 4);
     }
 
+    [Fact]
     public async Task Registration_AddAndDelete_AddTwoRegistrationSucess()
     {
         var name = "AddAndDelete_AddAndDeleteSucess";
@@ -107,11 +108,15 @@ public class ServiceTaskSchedulerTest : InfrastructureTestBase
             {
                 Enabled = true,
                 Expire = null,
-                IdTaskOnSchedule = 0,
+                IdTaskOnSchedule = 1,
                 UpdateAt = DateTime.Now
             };
 
         Assert.NotNull(await _taskSchedulerService.AddTaskActionAsync(action));
         Assert.NotNull(await _taskSchedulerService.AddTaskTriggerAsync(trigger));
+
+        await Assert.ThrowsAnyAsync<Application.Exceptions.BadRequestTssException>(() => _taskSchedulerService.DeleteTaskGroupAsync(group.Id));
+
+        Assert.NotNull(await _taskSchedulerService.DeleteTaskGroupAsync(group.Id, true));
     }
 }
