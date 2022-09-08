@@ -4,7 +4,8 @@ public enum PauseModelEnum : sbyte
 {
     Paused = 0,
     Running = 1,
-    Failed = 2
+    Failed = 2,
+    InProcess = 3
 }
 
 public class PauseModel

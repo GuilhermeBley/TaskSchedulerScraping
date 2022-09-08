@@ -171,6 +171,15 @@ public sealed class ContextRun
         return false;
     }
 
+    /// <summary>
+    /// Check if it is disposed
+    /// </summary>
+    /// <returns>true - it was disponsed, false - not was disposed</returns>
+    public bool IsDisposed()
+    {
+        return IsStatusDiposed(_currentStatus);
+    }
+
     private static bool IsStatusDiposed(ContextRunEnum status)
     {
         if (status.Equals(ContextRunEnum.Disposed) || 

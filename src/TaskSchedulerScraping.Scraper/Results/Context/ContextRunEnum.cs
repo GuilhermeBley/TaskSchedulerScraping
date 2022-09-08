@@ -3,7 +3,7 @@ public enum ContextRunEnum : sbyte
     /// <summary>
     /// Should be stopped
     /// </summary>
-    Stopped = 0,
+    Paused = 0,
 
     /// <summary>
     /// Should be in executing

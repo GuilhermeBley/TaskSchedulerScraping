@@ -15,5 +15,6 @@ public class StopModel
 public enum StopModelEnum : sbyte
 {
     Stoped = 1,
-    Failed = 2
+    Failed = 2,
+    InProcess = 3
 }

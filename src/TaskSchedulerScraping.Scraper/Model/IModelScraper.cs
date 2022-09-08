@@ -9,6 +9,21 @@ namespace TaskSchedulerScraping.Scraper.Model;
 public interface IModelScraper
 {
     /// <summary>
+    /// Identifier
+    /// </summary>
+    Guid IdScraper { get; }
+
+    /// <summary>
+    /// Number of scraper to execute your context
+    /// </summary>
+    int CountScraper { get; }
+
+    /// <summary>
+    /// Unique name
+    /// </summary>
+    string ModelScraperName { get; }
+
+    /// <summary>
     /// Requests pause async
     /// </summary>
     /// <remarks>
@@ -18,10 +33,10 @@ public interface IModelScraper
     Task<ResultBase<PauseModel>> PauseAsync(bool pause = true);
 
     /// <summary>
-    /// Requests run async
+    /// Requests run scrapers
     /// </summary>
     /// <returns><see cref="ResultBase{RunModel}"/></returns>
-    Task<ResultBase<RunModel>> RunAsync();
+    ResultBase<RunModel> RunAsync();
 
     /// <summary>
     /// Requests stop async
