@@ -19,11 +19,6 @@ public interface IModelScraper
     int CountScraper { get; }
 
     /// <summary>
-    /// Unique name
-    /// </summary>
-    string ModelScraperName { get; }
-
-    /// <summary>
     /// Requests pause async
     /// </summary>
     /// <remarks>
@@ -36,7 +31,7 @@ public interface IModelScraper
     /// Requests run scrapers
     /// </summary>
     /// <returns><see cref="ResultBase{RunModel}"/></returns>
-    ResultBase<RunModel> RunAsync();
+    ResultBase<RunModel> Run();
 
     /// <summary>
     /// Requests stop async

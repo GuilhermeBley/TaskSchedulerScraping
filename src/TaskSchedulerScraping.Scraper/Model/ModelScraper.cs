@@ -5,22 +5,34 @@ using TaskSchedulerScraping.Scraper.Results;
 
 namespace TaskSchedulerScraping.Scraper.Model;
 
-public abstract class ModelScraper<TData> : IModelScraper, IDisposable
+/// <summary>
+/// Class run executions with initial data to search
+/// </summary>
+/// <typeparam name="TExecutionContext">Context to execution</typeparam>
+/// <typeparam name="TData">Initial data to execute</typeparam>
+public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     where TData : class
+    where TExecutionContext : IExecutionContext<TData>
 {
+    /// <summary>
+    /// Private currently status of execution
+    /// </summary>
     private readonly ModelScraperStatus _status = new();
 
+    /// <summary>
+    /// Identifier generates on instance
+    /// </summary>
     private readonly Guid _idScraper = Guid.NewGuid();
 
     /// <summary>
     /// Concurrent list of execution context
     /// </summary>
-    private readonly IEnumerable<IExecutionContext<TData>> _contexts;
+    private readonly Func<TExecutionContext> _getContext;
 
     /// <summary>
     /// FIFO of searches to do
     /// </summary>
-    private readonly ConcurrentQueue<TData> _searches;
+    private readonly ConcurrentQueue<TData> _searchData;
 
     /// <summary>
     /// Thread in pausing
@@ -38,9 +50,14 @@ public abstract class ModelScraper<TData> : IModelScraper, IDisposable
     private bool _disposing = false;
 
     /// <summary>
+    /// Concurrent list of execution context
+    /// </summary>
+    private IEnumerable<TExecutionContext> _contexts;
+
+    /// <summary>
     /// Scraping to execute
     /// </summary>
-    protected abstract int _countScraper { get; }
+    private int _countScraper { get; }
 
     /// <inheritdoc cref="_countScraper" path="*"/>
     public int CountScraper => _countScraper;
@@ -51,13 +68,26 @@ public abstract class ModelScraper<TData> : IModelScraper, IDisposable
     public Guid IdScraper => _idScraper;
 
     /// <summary>
-    /// Name of scraper
+    /// It is invoked when all workers finished
     /// </summary>
-    public abstract string ModelScraperName { get; }
+    public Action<ResultBase<Exception?>>? WhenAllWorksFinished;
 
-    public ModelScrapper()
+    /// <summary>
+    /// It is invoked when the data have searched with success or no.
+    /// </summary>
+    public Action<ResultBase<TData>>? WhenDataFinished;
+
+    public ModelScraper(
+        int countScraper,
+        Func<TExecutionContext> getContext,
+        Func<IEnumerable<TData>> getData)
     {
-
+        _countScraper = countScraper;
+        _getContext = getContext;
+        _searchData =
+            new ConcurrentQueue<TData>(
+                getData.Invoke() ?? throw new ArgumentNullException(nameof(getData))
+            );
     }
 
     /// <summary>
@@ -103,9 +133,53 @@ public abstract class ModelScraper<TData> : IModelScraper, IDisposable
         }
     }
 
-    public ResultBase<RunModel> RunAsync()
+    public ResultBase<RunModel> Run()
     {
-        throw new NotImplementedException();
+        if (_running == true)
+            return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "In process to start."));
+
+        try
+        {
+            _running = true;
+
+            if (_status.IsDisposed())
+            {
+                return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.Disposed, _countScraper, "Already disposed."));
+            }
+
+            if (_status.Status != ScraperStatusEnum.Starting)
+            {
+                return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "Already started."));
+            }
+
+            var contexts = new List<TExecutionContext>();
+            for (int indexScraper = 0; indexScraper < _countScraper; indexScraper++)
+            {
+                var thread =
+                    new Thread(() =>
+                    {
+                        var executionContext = _getContext.Invoke();
+                        contexts.Add(executionContext);
+                        RunSearch(executionContext);
+                    });
+
+                thread.Start();
+            }
+
+            _contexts = contexts;
+            _status.SetStatus(ScraperStatusEnum.Running);
+
+            return ResultBase<RunModel>.GetSucess(new RunModel(RunModelEnum.OkRequest, _countScraper));
+        }
+        catch (Exception e)
+        {
+            return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.FailedRequest, _countScraper, e.Message));
+        }
+        finally
+        {
+            _running = false;
+        }
+
     }
 
     public async Task<ResultBase<StopModel>> StopAsync()
@@ -117,23 +191,21 @@ public abstract class ModelScraper<TData> : IModelScraper, IDisposable
         }
 
         if (_disposing)
-            return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.Stopping))
+            return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.InProcess));
 
         _disposing = true;
 
-        try{
+        try
+        {
 
-        }finally
+        }
+        finally
         {
             _disposing = false;
         }
         return await DisposeAsync();
     }
 
-    protected abstract IExecutionContext<TData> GetExecutionContext();
-    protected abstract IEnumerable<TData> GetExecutionData();
-
-    
     /// <summary>
     /// Pause and set all of the execute context to pause
     /// </summary>
@@ -147,7 +219,7 @@ public abstract class ModelScraper<TData> : IModelScraper, IDisposable
             contextInfo.SetRequestStatus(ContextRunEnum.Paused);
         }
 
-        while (!_contexts.All(context => context.Context.IsCurrentContextEqualsTheRequested()  || context.Context.IsDisposed()))
+        while (!_contexts.All(context => context.Context.IsCurrentContextEqualsTheRequested() || context.Context.IsDisposed()))
         {
             await Task.Delay(300);
         }
@@ -200,6 +272,71 @@ public abstract class ModelScraper<TData> : IModelScraper, IDisposable
         _status.SetStatus(ScraperStatusEnum.Disposed);
 
         return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.Stoped));
+    }
+
+    private void RunSearch(TExecutionContext executionContext)
+    {
+        var context = executionContext.Context ?? throw new ArgumentNullException(nameof(executionContext.Context));
+
+        if (context.RequestStatus == ContextRunEnum.Disposed)
+        {
+            context.SetCurrentStatusWithException(
+                new ObjectDisposedException(nameof(executionContext))
+            );
+            executionContext.Dispose();
+            return;
+        }
+        if (context.RequestStatus == ContextRunEnum.Paused)
+        {
+            context.SetCurrentStatus(ContextRunEnum.Paused);
+            Thread.Sleep(250);
+            RunSearch(executionContext);
+            return;
+        }
+
+        context.SetCurrentStatus(ContextRunEnum.Running);
+
+        Exception? e = null;
+        var hasData = _searchData.TryDequeue(out TData? dataOut);
+        if (!hasData)
+        {
+            context.SetCurrentStatusFinished();
+            executionContext.Dispose();
+            return;
+        }
+        
+        var searched = false;
+        try
+        {
+            executionContext.Execute(dataOut!);
+
+            searched = true;
+        }
+        catch (ObjectDisposedException)
+        {
+            context.SetCurrentStatusWithException(
+                new ObjectDisposedException(nameof(executionContext))
+            );
+            executionContext.Dispose();
+            return;
+        }
+        finally
+        {
+            if (!searched && hasData)
+            {
+                _searchData.Enqueue(dataOut!);
+                RunSearch(executionContext);
+            }
+        }
+
+        if (_searchData.Any())
+        {
+            RunSearch(executionContext);
+            return;
+        }
+
+        context.SetCurrentStatusFinished();
+        executionContext.Dispose();
     }
 
     /// <summary>
