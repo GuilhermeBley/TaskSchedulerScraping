@@ -159,7 +159,8 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                     {
                         var executionContext = _getContext.Invoke();
                         _contexts.Add(executionContext);
-                        RunSearch(executionContext);
+                        using (executionContext)
+                            RunSearch(executionContext);
                     });
 
                 thread.Start();
@@ -299,7 +300,6 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
         context.SetCurrentStatus(ContextRunEnum.Running);
 
-        Exception? e = null;
         var hasData = _searchData.TryDequeue(out TData? dataOut);
         if (!hasData)
         {
