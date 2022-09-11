@@ -52,7 +52,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <summary>
     /// Concurrent list of execution context
     /// </summary>
-    private BlockingCollection<TExecutionContext> _contexts;
+    private BlockingCollection<TExecutionContext> _contexts { get; } = new();
 
     /// <summary>
     /// Scraping to execute
