@@ -52,7 +52,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <summary>
     /// Concurrent list of execution context
     /// </summary>
-    private IEnumerable<TExecutionContext> _contexts;
+    private BlockingCollection<TExecutionContext> _contexts;
 
     /// <summary>
     /// Scraping to execute
@@ -75,7 +75,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <summary>
     /// It is invoked when the data have searched with success or no.
     /// </summary>
-    public Action<ResultBase<TData>>? WhenDataFinished;
+    public Action<ResultBase<TData?>>? WhenDataFinished;
 
     public ModelScraper(
         int countScraper,
@@ -152,21 +152,19 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "Already started."));
             }
 
-            var contexts = new List<TExecutionContext>();
             for (int indexScraper = 0; indexScraper < _countScraper; indexScraper++)
             {
                 var thread =
                     new Thread(() =>
                     {
                         var executionContext = _getContext.Invoke();
-                        contexts.Add(executionContext);
+                        _contexts.Add(executionContext);
                         RunSearch(executionContext);
                     });
 
                 thread.Start();
-            }
+            };
 
-            _contexts = contexts;
             _status.SetStatus(ScraperStatusEnum.Running);
 
             return ResultBase<RunModel>.GetSucess(new RunModel(RunModelEnum.OkRequest, _countScraper));
@@ -274,6 +272,11 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.Stoped));
     }
 
+    /// <summary>
+    /// each worker thread execute this method
+    /// </summary>
+    /// <param name="executionContext">Context execution</param>
+    /// <exception cref="ArgumentNullException"><paramref name="executionContext"/></exception>
     private void RunSearch(TExecutionContext executionContext)
     {
         var context = executionContext.Context ?? throw new ArgumentNullException(nameof(executionContext.Context));
@@ -304,13 +307,14 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             executionContext.Dispose();
             return;
         }
-        
+
         var searched = false;
         try
         {
             executionContext.Execute(dataOut!);
 
             searched = true;
+            WhenDataFinished?.Invoke(ResultBase<TData?>.GetSucess(dataOut));
         }
         catch (ObjectDisposedException)
         {
@@ -325,7 +329,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             if (!searched && hasData)
             {
                 _searchData.Enqueue(dataOut!);
-                RunSearch(executionContext);
+                WhenDataFinished?.Invoke(ResultBase<TData?>.GetWithError(dataOut));
             }
         }
 
