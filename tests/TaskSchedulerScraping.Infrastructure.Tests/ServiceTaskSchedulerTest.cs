@@ -1,6 +1,6 @@
 using TaskSchedulerScraping.Application.Services.Interfaces;
 
-namespace TaskSchedulerScraping.Infrastructure.Tests.Tests;
+namespace TaskSchedulerScraping.Infrastructure.Tests;
 
 public class ServiceTaskSchedulerTest : InfrastructureTestBase
 {
