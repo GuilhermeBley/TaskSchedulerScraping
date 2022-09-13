@@ -11,6 +11,4 @@ public interface IExecutionContext<TData> : IDisposable
     int Id { get; }
     ContextRun Context { get; }
     void Execute(TData data);
-    void Stop();
-    void Pause(bool pause = true);
 }
