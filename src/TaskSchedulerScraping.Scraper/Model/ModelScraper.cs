@@ -196,13 +196,12 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
         try
         {
-
+            return await DisposeAsync();
         }
         finally
         {
             _disposing = false;
         }
-        return await DisposeAsync();
     }
 
     /// <summary>
