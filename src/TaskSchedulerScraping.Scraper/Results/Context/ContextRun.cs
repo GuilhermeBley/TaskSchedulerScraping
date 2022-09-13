@@ -13,12 +13,12 @@ public sealed class ContextRun
     /// <summary>
     /// Current status of context
     /// </summary>
-    private ContextRunEnum _currentStatus;
+    private ContextRunEnum _currentStatus = ContextRunEnum.Running;
 
     /// <summary>
     /// Requested status of context
     /// </summary>
-    private ContextRunEnum _requestStatus;
+    private ContextRunEnum _requestStatus = ContextRunEnum.Running;
 
     /// <summary>
     /// Exception generated with the disposed

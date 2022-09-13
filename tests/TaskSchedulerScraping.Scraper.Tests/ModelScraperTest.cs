@@ -1,5 +1,6 @@
 using TaskSchedulerScraping.Scraper.Model;
 using TaskSchedulerScraping.Scraper.Tests.Mocks;
+using TaskSchedulerScraping.Scraper.Tests.Monitors;
 
 namespace TaskSchedulerScraping.Scraper.Tests;
 
@@ -8,6 +9,7 @@ public class ModelScraperTest
     [Fact]
     public void Test1()
     {
+        var monitor = new SimpleMonitor();
         var exec = new SimpleExecution();
         var model = 
             new ModelScraper<SimpleExecution, SimpleData>
@@ -21,11 +23,9 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
-        DateTime start = DateTime.Now;
-        while (true)
-        {
-            
-        }
+        monitor.Wait();
+
+
 
         Assert.True(exec.ExecHours.Any());
 
