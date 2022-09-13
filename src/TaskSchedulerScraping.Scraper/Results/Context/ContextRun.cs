@@ -11,6 +11,11 @@ public sealed class ContextRun
     private readonly int _id;
 
     /// <summary>
+    /// Thread id
+    /// </summary>
+    public int IdThread => _id;
+
+    /// <summary>
     /// Current status of context
     /// </summary>
     private ContextRunEnum _currentStatus = ContextRunEnum.Running;

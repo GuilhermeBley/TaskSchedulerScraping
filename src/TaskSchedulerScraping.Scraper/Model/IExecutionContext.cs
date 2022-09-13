@@ -2,13 +2,30 @@ using TaskSchedulerScraping.Scraper.Results.Context;
 
 namespace TaskSchedulerScraping.Scraper.Model;
 
-/// <summary>
-/// Executing context should be used by a unique thread.
-/// </summary>
-public interface IExecutionContext<TData> : IDisposable
+public abstract class ExecutionContext<TData> : IDisposable
     where TData : class
 {
-    int Id { get; }
-    ContextRun Context { get; }
-    void Execute(TData data);
+    /// <summary>
+    /// Thread which execute the class
+    /// </summary>
+    public int Id => Context.IdThread;
+
+    /// <summary>
+    /// Context in execution
+    /// </summary>
+    internal ContextRun Context { get; } = new();
+
+    /// <summary>
+    /// Execution
+    /// </summary>
+    /// <param name="data">Data to execute</param>
+    public abstract void Execute(TData data);
+
+    /// <summary>
+    /// Dispose resources from instance
+    /// </summary>
+    public virtual void Dispose()
+    {
+
+    }
 }

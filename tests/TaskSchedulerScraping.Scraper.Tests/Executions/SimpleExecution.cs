@@ -3,23 +3,25 @@ using TaskSchedulerScraping.Scraper.Results.Context;
 
 namespace TaskSchedulerScraping.Scraper.Tests.Executions;
 
-internal class SimpleExecution : IExecutionContext<SimpleData>
+internal class SimpleExecution : ExecutionContext<SimpleData>
 {
     private List<DateTime> _execHours { get; } = new();
     public IEnumerable<DateTime> ExecHours => _execHours;
-    public int Id => 0;
-
     public ContextRun Context { get; } = new ContextRun();
 
-    public void Dispose()
+    public Action<DateTime>? OnSearch;
+
+    public override void Dispose()
     {
         
     }
 
-    public void Execute(SimpleData data)
+    public override void Execute(SimpleData data)
     {
         Thread.Sleep(100);
-        _execHours.Add(DateTime.Now);
+        var time = DateTime.Now;
+        _execHours.Add(time);
+        OnSearch?.Invoke(time);
         Thread.Sleep(100);
     }
 }

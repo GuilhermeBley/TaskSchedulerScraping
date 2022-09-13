@@ -12,7 +12,7 @@ namespace TaskSchedulerScraping.Scraper.Model;
 /// <typeparam name="TData">Initial data to execute</typeparam>
 public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     where TData : class
-    where TExecutionContext : IExecutionContext<TData>
+    where TExecutionContext : ExecutionContext<TData>
 {
     /// <summary>
     /// Finished execution list
