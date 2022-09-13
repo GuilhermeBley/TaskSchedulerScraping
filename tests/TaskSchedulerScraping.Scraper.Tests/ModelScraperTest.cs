@@ -8,11 +8,12 @@ public class ModelScraperTest
     [Fact]
     public void Test1()
     {
+        var exec = new SimpleExecution();
         var model = 
             new ModelScraper<SimpleExecution, SimpleData>
             (
                 1,
-                () => new SimpleExecution(),
+                () => exec,
                 () => SimpleDataFactory.GetData()
             );
 
@@ -20,7 +21,9 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
-        Thread.Sleep(200);
+        Thread.Sleep(300);
+
+        Assert.True(exec.ExecHours.Any());
 
         var resultStop = model.StopAsync().GetAwaiter().GetResult();
 
