@@ -19,6 +19,11 @@ public interface IModelScraper
     int CountScraper { get; }
 
     /// <summary>
+    /// Get current state
+    /// </summary>
+    ModelStateEnum State { get; }
+
+    /// <summary>
     /// Requests pause async
     /// </summary>
     /// <remarks>

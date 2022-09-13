@@ -72,6 +72,9 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// </summary>
     public Guid IdScraper => _idScraper;
 
+    /// <inheritdoc/>
+    public ModelStateEnum State => _status.State;
+
     /// <summary>
     /// It is invoked when all workers finished
     /// </summary>
@@ -117,10 +120,10 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "already disposed."));
             }
 
-            if (pause && _status.Status == ScraperStatusEnum.Paused)
+            if (pause && _status.State == ModelStateEnum.Paused)
                 return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Paused));
 
-            if (!pause && _status.Status == ScraperStatusEnum.Running)
+            if (!pause && _status.State == ModelStateEnum.Running)
                 return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Running));
 
             if (pause)
@@ -152,7 +155,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.Disposed, _countScraper, "Already disposed."));
             }
 
-            if (_status.Status != ScraperStatusEnum.Starting)
+            if (_status.State != ModelStateEnum.NotRunning)
             {
                 return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "Already started."));
             }
@@ -191,7 +194,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 thread.Start();
             };
 
-            _status.SetStatus(ScraperStatusEnum.Running);
+            _status.SetStatus(ModelStateEnum.Running);
 
             return ResultBase<RunModel>.GetSucess(new RunModel(RunModelEnum.OkRequest, _countScraper));
         }
@@ -247,7 +250,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             await Task.Delay(300);
         }
 
-        _status.SetStatus(ScraperStatusEnum.Paused);
+        _status.SetStatus(ModelStateEnum.Paused);
 
         return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Paused));
     }
@@ -270,7 +273,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             await Task.Delay(300);
         }
 
-        _status.SetStatus(ScraperStatusEnum.Running);
+        _status.SetStatus(ModelStateEnum.Running);
 
         return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Running));
     }
@@ -292,7 +295,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             await Task.Delay(300);
         }
 
-        _status.SetStatus(ScraperStatusEnum.Disposed);
+        _status.SetStatus(ModelStateEnum.Disposed);
 
         return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.Stoped));
     }
@@ -373,7 +376,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <returns>true : all finished, false : in progress or isn't running</returns>
     private bool IsFinished()
     {
-        if (_status.Status == ScraperStatusEnum.Starting)
+        if (_status.State == ModelStateEnum.NotRunning)
             return false;
 
         if (_countScraper != _endExec.Count)
@@ -387,26 +390,26 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// </summary>
     private class ModelScraperStatus
     {
-        private ScraperStatusEnum _status = ScraperStatusEnum.Starting;
-        public ScraperStatusEnum Status => _status;
+        private ModelStateEnum _state = ModelStateEnum.NotRunning;
+        public ModelStateEnum State => _state;
 
         /// <summary>
-        /// Set <see cref="Status"/>
+        /// Set <see cref="State"/>
         /// </summary>
-        /// <param name="status">Status to set</param>
+        /// <param name="state">Status to set</param>
         /// <returns>result base</returns>
-        public ResultBase<string> SetStatus(ScraperStatusEnum @status)
+        public ResultBase<string> SetStatus(ModelStateEnum state)
         {
-            if (_status == ScraperStatusEnum.Disposed)
+            if (_state == ModelStateEnum.Disposed)
                 return ResultBase<string>.GetWithError("Already disposed.");
 
-            if (@status == ScraperStatusEnum.Starting)
+            if (state == ModelStateEnum.NotRunning)
                 return ResultBase<string>.GetWithError("Already started.");
 
-            if (@status == _status)
+            if (state == _state)
                 return ResultBase<string>.GetSucess($"Ok");
 
-            _status = @status;
+            _state = state;
             return ResultBase<string>.GetSucess("Ok");
         }
 
@@ -415,21 +418,10 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         /// </summary>
         public bool IsDisposed()
         {
-            if (_status == ScraperStatusEnum.Disposed)
+            if (_state == ModelStateEnum.Disposed)
                 return true;
 
             return false;
         }
-    }
-
-    /// <summary>
-    /// Types of states
-    /// </summary>
-    private enum ScraperStatusEnum : sbyte
-    {
-        Starting = 0,
-        Running = 1,
-        Paused = 2,
-        Disposed = 3
     }
 }

@@ -17,7 +17,10 @@ public class ModelScraperTest
                 1,
                 () => exec,
                 () => SimpleDataFactory.GetData()
-            );
+            )
+            {
+                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
+            };
 
         var resultRun = model.Run();
 
@@ -29,6 +32,6 @@ public class ModelScraperTest
 
         var resultStop = model.StopAsync().GetAwaiter().GetResult();
 
-        Assert.True(resultStop.IsSucess);
+        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 }
