@@ -21,7 +21,11 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
-        Thread.Sleep(300);
+        DateTime start = DateTime.Now;
+        while (true)
+        {
+            
+        }
 
         Assert.True(exec.ExecHours.Any());
 
