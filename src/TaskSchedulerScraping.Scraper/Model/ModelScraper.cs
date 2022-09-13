@@ -15,6 +15,11 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     where TExecutionContext : IExecutionContext<TData>
 {
     /// <summary>
+    /// Finished execution list
+    /// </summary>
+    private readonly BlockingCollection<ResultBase<Exception?>> _endExec = new();
+
+    /// <summary>
     /// Private currently status of execution
     /// </summary>
     private readonly ModelScraperStatus _status = new();
@@ -70,7 +75,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <summary>
     /// It is invoked when all workers finished
     /// </summary>
-    public Action<ResultBase<Exception?>>? WhenAllWorksFinished;
+    public Action<IEnumerable<ResultBase<Exception?>>>? WhenAllWorksEnd;
 
     /// <summary>
     /// It is invoked when the data have searched with success or no.
@@ -157,10 +162,30 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 var thread =
                     new Thread(() =>
                     {
-                        var executionContext = _getContext.Invoke();
-                        _contexts.Add(executionContext);
-                        using (executionContext)
-                            RunSearch(executionContext);
+                        Exception? exceptionEnd = null;
+                        try
+                        {
+                            var executionContext = _getContext.Invoke();
+                            _contexts.Add(executionContext);
+                            using (executionContext)
+                                RunSearch(executionContext);
+                        }
+                        catch(Exception e)
+                        {
+                            exceptionEnd = e;
+                        }
+                        finally
+                        {
+                            if (exceptionEnd is null)
+                                _endExec.Add(ResultBase<Exception?>.GetSucess(exceptionEnd));
+                            else
+                                _endExec.Add(ResultBase<Exception?>.GetWithError(exceptionEnd));
+
+                            if (IsFinished())
+                            {
+                                WhenAllWorksEnd?.Invoke(_endExec);
+                            }
+                        }
                     });
 
                 thread.Start();
@@ -340,6 +365,21 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
         context.SetCurrentStatusFinished();
         executionContext.Dispose();
+    }
+
+    /// <summary>
+    /// Checks if all of the executions are ended.
+    /// </summary>
+    /// <returns>true : all finished, false : in progress or isn't running</returns>
+    private bool IsFinished()
+    {
+        if (_status.Status == ScraperStatusEnum.Starting)
+            return false;
+
+        if (_countScraper != _endExec.Count)
+            return false;
+
+        return true;
     }
 
     /// <summary>

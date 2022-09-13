@@ -23,9 +23,7 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
-        monitor.Wait();
-
-
+        monitor.Wait(30*1000, ()=> Assert.True(false));
 
         Assert.True(exec.ExecHours.Any());
 
