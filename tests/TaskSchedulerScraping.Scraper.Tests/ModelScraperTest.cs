@@ -12,7 +12,7 @@ public class ModelScraperTest
     {
         BlockingCollection<DateTime> blockList = new();
         var monitor = new SimpleMonitor();
-        var model = 
+        IModelScraper model = 
             new ModelScraper<SimpleExecution, SimpleData>
             (
                 1,
@@ -41,7 +41,7 @@ public class ModelScraperTest
     {
         BlockingCollection<DateTime> blockList = new();
         var monitor = new SimpleMonitor();
-        var model = 
+        IModelScraper model = 
             new ModelScraper<SimpleExecution, SimpleData>
             (
                 2,
@@ -70,7 +70,7 @@ public class ModelScraperTest
     {
         BlockingCollection<DateTime> blockList = new();
         var monitor = new SimpleMonitor();
-        var model = 
+        IModelScraper model = 
             new ModelScraper<SimpleExecution, SimpleData>
             (
                 10,
@@ -99,7 +99,7 @@ public class ModelScraperTest
     {
         BlockingCollection<int> blockList = new();
         var monitor = new SimpleMonitor();
-        var model = 
+        IModelScraper model = 
             new ModelScraper<SimpleExecution, SimpleData>
             (
                 10,

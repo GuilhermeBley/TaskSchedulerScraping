@@ -106,8 +106,10 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         StopAsync().GetAwaiter().GetResult();
     }
 
-    public async Task<ResultBase<PauseModel>> PauseAsync(bool pause = true)
+    public async Task<ResultBase<PauseModel>> PauseAsync(bool pause = true, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (_pausing)
             return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.InProcess));
 
@@ -127,10 +129,10 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Running));
 
             if (pause)
-                return await PauseAsync();
+                return await SetPauseAsync(cancellationToken);
 
             if (!pause)
-                return await UnPauseAsync();
+                return await UnPauseAsync(cancellationToken);
 
             else
                 return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Option not finded."));
@@ -216,8 +218,10 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
     }
 
-    public async Task<ResultBase<StopModel>> StopAsync()
+    public async Task<ResultBase<StopModel>> StopAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (_status.IsDisposed())
         {
             await Task.CompletedTask;
@@ -231,7 +235,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
         try
         {
-            return await DisposeAsync();
+            return await DisposeAsync(cancellationToken);
         }
         finally
         {
@@ -245,7 +249,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <remarks>
     ///     <para>Status set to Paused</para>
     /// </remarks>
-    private async Task<ResultBase<PauseModel>> PauseAsync()
+    private async Task<ResultBase<PauseModel>> SetPauseAsync(CancellationToken cancellationToken = default)
     {
         foreach (var contextInfo in _contexts.Select(context => context.Context))
         {
@@ -254,6 +258,8 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
         while (!_contexts.All(context => context.Context.IsCurrentContextEqualsTheRequested() || context.Context.IsDisposed()))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             await Task.Delay(300);
         }
 
@@ -268,8 +274,10 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <remarks>
     ///     <para>Status set to running</para>
     /// </remarks>
-    private async Task<ResultBase<PauseModel>> UnPauseAsync()
+    private async Task<ResultBase<PauseModel>> UnPauseAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         foreach (var contextInfo in _contexts.Select(context => context.Context))
         {
             contextInfo.SetRequestStatus(ContextRunEnum.Running);
@@ -277,6 +285,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
         while (!_contexts.All(context => context.Context.IsCurrentContextEqualsTheRequested() || context.Context.IsDisposed()))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             await Task.Delay(300);
         }
 
@@ -289,8 +298,10 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// Dispose and set all of the execute context to disposed
     /// </summary>
     /// <returns></returns>
-    private async Task<ResultBase<StopModel>> DisposeAsync()
+    private async Task<ResultBase<StopModel>> DisposeAsync(CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
+
         foreach (var contextInfo in _contexts.Select(context => context.Context))
         {
             if (!contextInfo.IsDisposed())
@@ -299,6 +310,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
         while (!_contexts.All(context => context.Context.IsCurrentContextEqualsTheRequested() || context.Context.IsDisposed()))
         {
+            token.ThrowIfCancellationRequested();
             await Task.Delay(300);
         }
 

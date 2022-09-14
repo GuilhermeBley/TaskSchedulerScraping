@@ -30,7 +30,8 @@ public interface IModelScraper
     ///     <param name="pause">True to pause, false to unpause</param>
     /// </remarks>
     /// <returns><see cref="ResultBase{PauseModel}"/></returns>
-    Task<ResultBase<PauseModel>> PauseAsync(bool pause = true);
+    /// <exception cref="ObjectDisposedException"/>
+    Task<ResultBase<PauseModel>> PauseAsync(bool pause = true, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Requests run scrapers
@@ -42,5 +43,6 @@ public interface IModelScraper
     /// Requests stop async
     /// </summary>
     /// <returns><see cref="ResultBase{StopModel}"/></returns>
-    Task<ResultBase<StopModel>> StopAsync();
+    /// <exception cref="ObjectDisposedException"/>
+    Task<ResultBase<StopModel>> StopAsync(CancellationToken cancellationToken = default);
 }
