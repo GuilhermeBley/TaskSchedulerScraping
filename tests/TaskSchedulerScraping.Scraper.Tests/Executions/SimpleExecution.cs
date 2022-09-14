@@ -18,10 +18,8 @@ internal class SimpleExecution : ExecutionContext<SimpleData>
 
     public override void Execute(SimpleData data)
     {
-        Thread.Sleep(100);
         var time = DateTime.Now;
         _execHours.Add(time);
         OnSearch?.Invoke(time);
-        Thread.Sleep(100);
     }
 }

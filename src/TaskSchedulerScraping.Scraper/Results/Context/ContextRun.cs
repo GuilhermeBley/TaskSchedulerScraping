@@ -189,7 +189,7 @@ public sealed class ContextRun
     {
         if (status.Equals(ContextRunEnum.Disposed) || 
             status.Equals(ContextRunEnum.DisposedWithError) ||
-            status.Equals(ContextRunEnum.DisposedWithError))
+            status.Equals(ContextRunEnum.DisposedBecauseIsFinished))
             return true;
 
         return false;

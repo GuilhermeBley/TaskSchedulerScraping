@@ -166,9 +166,9 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                     new Thread(() =>
                     {
                         Exception? exceptionEnd = null;
+                        var executionContext = _getContext.Invoke();
                         try
                         {
-                            var executionContext = _getContext.Invoke();
                             _contexts.Add(executionContext);
                             using (executionContext)
                                 RunSearch(executionContext);
@@ -180,9 +180,16 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                         finally
                         {
                             if (exceptionEnd is null)
+                            {
+                                executionContext.Context.SetCurrentStatusFinished();
                                 _endExec.Add(ResultBase<Exception?>.GetSucess(exceptionEnd));
+                            }
                             else
+                            {
+                                executionContext.Context.SetCurrentStatusWithException(exceptionEnd);
                                 _endExec.Add(ResultBase<Exception?>.GetWithError(exceptionEnd));
+                            }
+                             
 
                             if (IsFinished())
                             {
