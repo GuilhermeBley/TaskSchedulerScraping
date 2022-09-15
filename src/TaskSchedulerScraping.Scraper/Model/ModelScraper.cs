@@ -2,6 +2,7 @@
 using TaskSchedulerScraping.Scraper.Results.Models;
 using TaskSchedulerScraping.Scraper.Results.Context;
 using TaskSchedulerScraping.Scraper.Results;
+using TaskSchedulerScraping.Scraper.Exceptions;
 
 namespace TaskSchedulerScraping.Scraper.Model;
 
@@ -83,7 +84,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <summary>
     /// It is invoked when the data have searched with success or no.
     /// </summary>
-    public Action<ResultBase<TData?>>? WhenDataFinished;
+    public Action<ResultBase<TData>>? WhenDataFinished;
 
     public ModelScraper(
         int countScraper,
@@ -110,18 +111,28 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        if (_status.IsDisposed())
+        {
+            await Task.CompletedTask;
+            return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Already disposed"));
+        }
+
+        if (_status.State != ModelStateEnum.Running && _status.State != ModelStateEnum.Paused)
+            return ResultBase<PauseModel>.GetWithError(
+                new PauseModel(PauseModelEnum.Failed, $"In state {Enum.GetName(typeof(ModelStateEnum), _status.State)} isn't allowed pause or unpause."));
+
+        if (_running)
+            return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Running in process."));
+
+        if (_disposing)
+            return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Disposing."));
+
         if (_pausing)
             return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.InProcess));
 
         _pausing = true;
         try
         {
-            if (_status.IsDisposed())
-            {
-                await Task.CompletedTask;
-                return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "already disposed."));
-            }
-
             if (pause && _status.State == ModelStateEnum.Paused)
                 return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Paused));
 
@@ -167,37 +178,9 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 var thread =
                     new Thread(() =>
                     {
-                        Exception? exceptionEnd = null;
-                        var executionContext = _getContext.Invoke();
-                        try
-                        {
-                            _contexts.Add(executionContext);
-                            using (executionContext)
-                                RunSearch(executionContext);
-                        }
-                        catch(Exception e)
-                        {
-                            exceptionEnd = e;
-                        }
-                        finally
-                        {
-                            if (exceptionEnd is null)
-                            {
-                                executionContext.Context.SetCurrentStatusFinished();
-                                _endExec.Add(ResultBase<Exception?>.GetSucess(exceptionEnd));
-                            }
-                            else
-                            {
-                                executionContext.Context.SetCurrentStatusWithException(exceptionEnd);
-                                _endExec.Add(ResultBase<Exception?>.GetWithError(exceptionEnd));
-                            }
-                             
-
-                            if (IsFinished())
-                            {
-                                WhenAllWorksEnd?.Invoke(_endExec);
-                            }
-                        }
+                        _endExec.Add(
+                            RunExecute()
+                        );
                     });
 
                 thread.Start();
@@ -228,6 +211,16 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             return ResultBase<StopModel>.GetWithError(new StopModel(StopModelEnum.Failed, "Already disposed"));
         }
 
+        if (_status.State != ModelStateEnum.Running)
+            return ResultBase<StopModel>.GetWithError(
+                new StopModel(StopModelEnum.Failed, $"In State {Enum.GetName(typeof(ModelStateEnum), _status.State)} isn't allowed stop."));
+
+        if (_running)
+            return ResultBase<StopModel>.GetWithError(new StopModel(StopModelEnum.Failed, "Running in process."));
+
+        if (_pausing)
+            return ResultBase<StopModel>.GetWithError(new StopModel(StopModelEnum.Failed, "Pausing in process."));
+
         if (_disposing)
             return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.InProcess));
 
@@ -240,6 +233,40 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         finally
         {
             _disposing = false;
+        }
+    }
+
+    /// <summary>
+    /// Only one Thread should be acess this method
+    /// </summary>
+    /// <remarks>
+    ///     <para></para>
+    /// </remarks>
+    private ResultBase<Exception?> RunExecute()
+    {
+        Exception? exceptionEnd = null;
+        var executionContext = _getContext.Invoke();
+        try
+        {
+            _contexts.Add(executionContext);
+            using (executionContext)
+                RunLoopSearch(executionContext);
+
+            executionContext.Context.SetCurrentStatusFinished();
+            return ResultBase<Exception?>.GetSucess(exceptionEnd);
+        }
+        catch (Exception e)
+        {
+            exceptionEnd = e;
+            executionContext.Context.SetCurrentStatusWithException(exceptionEnd);
+            return ResultBase<Exception?>.GetWithError(exceptionEnd);
+        }
+        finally
+        {
+            if (IsFinished())
+            {
+                WhenAllWorksEnd?.Invoke(_endExec);
+            }
         }
     }
 
@@ -324,7 +351,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// </summary>
     /// <param name="executionContext">Context execution</param>
     /// <exception cref="ArgumentNullException"><paramref name="executionContext"/></exception>
-    private void RunSearch(TExecutionContext executionContext)
+    private void RunLoopSearch(TExecutionContext executionContext, TData? dataToSearch = null)
     {
         var context = executionContext.Context ?? throw new ArgumentNullException(nameof(executionContext.Context));
 
@@ -333,60 +360,52 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             context.SetCurrentStatusWithException(
                 new ObjectDisposedException(nameof(executionContext))
             );
-            executionContext.Dispose();
             return;
         }
         if (context.RequestStatus == ContextRunEnum.Paused)
         {
             context.SetCurrentStatus(ContextRunEnum.Paused);
             Thread.Sleep(250);
-            RunSearch(executionContext);
+            RunLoopSearch(executionContext);
             return;
         }
 
         context.SetCurrentStatus(ContextRunEnum.Running);
 
-        var hasData = _searchData.TryDequeue(out TData? dataOut);
-        if (!hasData)
+        if (dataToSearch is null)
+            _searchData.TryDequeue(out dataToSearch);
+
+        if (dataToSearch is null)
         {
             context.SetCurrentStatusFinished();
-            executionContext.Dispose();
             return;
         }
 
         var searched = false;
         try
         {
-            executionContext.Execute(dataOut!);
+            executionContext.Execute(dataToSearch);
 
             searched = true;
-            WhenDataFinished?.Invoke(ResultBase<TData?>.GetSucess(dataOut));
+            WhenDataFinished?.Invoke(ResultBase<TData>.GetSucess(dataToSearch));
         }
-        catch (ObjectDisposedException)
-        {
-            context.SetCurrentStatusWithException(
-                new ObjectDisposedException(nameof(executionContext))
-            );
-            executionContext.Dispose();
-            return;
-        }
+        catch (PendingRequestException) { }
         finally
         {
-            if (!searched && hasData)
+            if (!searched)
             {
-                _searchData.Enqueue(dataOut!);
-                WhenDataFinished?.Invoke(ResultBase<TData?>.GetWithError(dataOut));
+                _searchData.Enqueue(dataToSearch);
+                WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
             }
         }
 
         if (_searchData.Any())
         {
-            RunSearch(executionContext);
+            RunLoopSearch(executionContext);
             return;
         }
 
         context.SetCurrentStatusFinished();
-        executionContext.Dispose();
     }
 
     /// <summary>

@@ -15,6 +15,12 @@ public abstract class ExecutionContext<TData> : IDisposable
     /// </summary>
     internal ContextRun Context { get; } = new();
 
+    
+    public void CheckState()
+    {
+
+    }
+
     /// <summary>
     /// Execution
     /// </summary>
