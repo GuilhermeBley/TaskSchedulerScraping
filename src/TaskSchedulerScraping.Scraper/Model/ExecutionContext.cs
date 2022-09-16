@@ -25,7 +25,7 @@ public abstract class ExecutionContext<TData> : IDisposable
     /// Execution
     /// </summary>
     /// <param name="data">Data to execute</param>
-    public abstract void Execute(TData data);
+    public abstract ExecutionResult Execute(TData data);
 
     /// <summary>
     /// Dispose resources from instance

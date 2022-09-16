@@ -20,11 +20,13 @@ internal class ThrowExcIntegerExecution : ExecutionContext<IntegerData>
 
     }
 
-    public override void Execute(IntegerData data)
+    public override ExecutionResult Execute(IntegerData data)
     {
         if (!_hasThrow && _throwOnNumber == data.Id)
             throw new Exception($"Throw on number {data.Id}.");
 
         OnSearch?.Invoke(data);
+        
+        return ExecutionResult.Ok();
     }
 }

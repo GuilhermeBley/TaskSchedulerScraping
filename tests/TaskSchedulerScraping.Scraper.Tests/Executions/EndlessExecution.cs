@@ -14,12 +14,14 @@ internal class EndlessExecution : ExecutionContext<SimpleData>
         
     }
 
-    public override void Execute(SimpleData data)
+    public override ExecutionResult Execute(SimpleData data)
     {
         while (true)
         {
             Thread.Sleep(50);
             OnRepeat?.Invoke();
-        } 
+
+            CheckState();
+        }
     }
 }

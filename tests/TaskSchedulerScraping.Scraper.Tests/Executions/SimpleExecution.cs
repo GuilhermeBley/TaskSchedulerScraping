@@ -16,10 +16,12 @@ internal class SimpleExecution : ExecutionContext<SimpleData>
         
     }
 
-    public override void Execute(SimpleData data)
+    public override ExecutionResult Execute(SimpleData data)
     {
         var time = DateTime.Now;
         _execHours.Add(time);
         OnSearch?.Invoke(time);
+
+        return ExecutionResult.Ok();
     }
 }

@@ -86,6 +86,11 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// </summary>
     public Action<ResultBase<TData>>? WhenDataFinished;
 
+    /// <summary>
+    /// Called when exception occurs in a execution
+    /// </summary>
+    public Func<Exception, TData, ExecutionResult>? WhenOccursException;
+
     public ModelScraper(
         int countScraper,
         Func<TExecutionContext> getContext,
@@ -366,7 +371,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         {
             context.SetCurrentStatus(ContextRunEnum.Paused);
             Thread.Sleep(250);
-            RunLoopSearch(executionContext);
+            RunLoopSearch(executionContext, dataToSearch);
             return;
         }
 
@@ -381,27 +386,56 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             return;
         }
 
-        var searched = false;
+        ExecutionResult executionResult;
+        Exception? exception = null;
         try
         {
-            executionContext.Execute(dataToSearch);
+            executionResult =
+                executionContext.Execute(dataToSearch);
+        }
+        catch (PendingRequestException) 
+        {
+            executionResult = ExecutionResult.RetrySame("Pending request");
+        }
+        catch (Exception e)
+        {
+            exception = e;
+            executionResult =
+                WhenOccursException is null ? ExecutionResult.ThrowException(e) :
+                WhenOccursException.Invoke(e, dataToSearch);
+        }
 
-            searched = true;
+        if (executionResult.ActionToNextData == ExecutionResultEnum.RetrySame)
+        {
+            WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
+            RunLoopSearch(executionContext, dataToSearch);
+            return;
+        }
+
+        if (executionResult.ActionToNextData == ExecutionResultEnum.RetryOther)
+        {
+            _searchData.Enqueue(dataToSearch);
+            WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
+            RunLoopSearch(executionContext, null);
+            return;
+        }
+
+        if (executionResult.ActionToNextData == ExecutionResultEnum.ThrowException &&
+            exception is not null)
+        {
+            
+            _searchData.Enqueue(dataToSearch);
+            WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
+            context.SetCurrentStatusWithException(exception);
+            return;
+        }
+
+        if (executionResult.ActionToNextData == ExecutionResultEnum.Next &&
+            _searchData.Any())
+        {
+            _searchData.Enqueue(dataToSearch);
             WhenDataFinished?.Invoke(ResultBase<TData>.GetSucess(dataToSearch));
-        }
-        catch (PendingRequestException) { }
-        finally
-        {
-            if (!searched)
-            {
-                _searchData.Enqueue(dataToSearch);
-                WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
-            }
-        }
-
-        if (_searchData.Any())
-        {
-            RunLoopSearch(executionContext);
+            RunLoopSearch(executionContext, null);
             return;
         }
 

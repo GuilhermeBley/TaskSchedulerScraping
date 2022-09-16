@@ -14,8 +14,10 @@ internal class IntegerExecution : ExecutionContext<IntegerData>
         
     }
 
-    public override void Execute(IntegerData data)
+    public override ExecutionResult Execute(IntegerData data)
     {
         OnSearch?.Invoke(data);
+
+        return ExecutionResult.Ok();
     }
 }
