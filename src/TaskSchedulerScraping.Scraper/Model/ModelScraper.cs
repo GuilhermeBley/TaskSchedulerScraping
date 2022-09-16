@@ -183,9 +183,21 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 var thread =
                     new Thread(() =>
                     {
-                        _endExec.Add(
-                            RunExecute()
-                        );
+                        try
+                        {
+                            _endExec.Add(
+                                RunExecute()
+                            );
+                        }
+                        finally
+                        {
+                            if (IsFinished())
+                            {
+                                _status.SetStatus(ModelStateEnum.Disposed);
+                                WhenAllWorksEnd?.Invoke(_endExec);
+                            }
+                        }
+
                     });
 
                 thread.Start();
@@ -213,7 +225,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         if (_status.IsDisposed())
         {
             await Task.CompletedTask;
-            return ResultBase<StopModel>.GetWithError(new StopModel(StopModelEnum.Failed, "Already disposed"));
+            return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.Stoped, "Already disposed"));
         }
 
         if (_status.State != ModelStateEnum.Running)
@@ -265,13 +277,6 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             exceptionEnd = e;
             executionContext.Context.SetCurrentStatusWithException(exceptionEnd);
             return ResultBase<Exception?>.GetWithError(exceptionEnd);
-        }
-        finally
-        {
-            if (IsFinished())
-            {
-                WhenAllWorksEnd?.Invoke(_endExec);
-            }
         }
     }
 
@@ -393,7 +398,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             executionResult =
                 executionContext.Execute(dataToSearch);
         }
-        catch (PendingRequestException) 
+        catch (PendingRequestException)
         {
             executionResult = ExecutionResult.RetrySame("Pending request");
         }
@@ -431,7 +436,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         if (executionResult.ActionToNextData == ExecutionResultEnum.ThrowException &&
             exception is not null)
         {
-            
+
             _searchData.Enqueue(dataToSearch);
             WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
             context.SetCurrentStatusWithException(exception);
