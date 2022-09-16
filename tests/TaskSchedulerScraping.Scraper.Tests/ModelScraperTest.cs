@@ -27,7 +27,7 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
-        monitor.Wait(30 * 1000, () => Assert.True(false));
+        monitor.Wait(3600 * 1000, () => Assert.True(false));
 
         Assert.True(blockList.Count == 10);
 
