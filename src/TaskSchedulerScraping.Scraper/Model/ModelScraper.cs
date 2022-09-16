@@ -405,6 +405,14 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 WhenOccursException.Invoke(e, dataToSearch);
         }
 
+        if (executionResult.ActionToNextData == ExecutionResultEnum.Next &&
+            _searchData.Any())
+        {
+            WhenDataFinished?.Invoke(ResultBase<TData>.GetSucess(dataToSearch));
+            RunLoopSearch(executionContext, null);
+            return;
+        }
+
         if (executionResult.ActionToNextData == ExecutionResultEnum.RetrySame)
         {
             WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
@@ -427,15 +435,6 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             _searchData.Enqueue(dataToSearch);
             WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
             context.SetCurrentStatusWithException(exception);
-            return;
-        }
-
-        if (executionResult.ActionToNextData == ExecutionResultEnum.Next &&
-            _searchData.Any())
-        {
-            _searchData.Enqueue(dataToSearch);
-            WhenDataFinished?.Invoke(ResultBase<TData>.GetSucess(dataToSearch));
-            RunLoopSearch(executionContext, null);
             return;
         }
 
