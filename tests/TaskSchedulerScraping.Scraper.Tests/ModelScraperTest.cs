@@ -193,12 +193,13 @@ public class ModelScraperTest
     [Fact]
     public async Task PauseModel_Pause_Pause()
     {
+        bool hasError = false;
         var monitor = new SimpleMonitor();
         IModelScraper model =
             new ModelScraper<EndlessExecution, SimpleData>
             (
                 1,
-                () => new EndlessExecution(),
+                () => new EndlessExecution() { OnRepeat = (containsError) => { hasError = containsError; } },
                 () => SimpleDataFactory.GetData(1)
             )
             {
@@ -215,10 +216,10 @@ public class ModelScraperTest
 
         Assert.True(pause.IsSucess);
         
-        monitor.Wait(5 * 1000, ()=>model.PauseAsync(false));
+        monitor.Wait(2 * 1000, ()=>model.PauseAsync(false).GetAwaiter().GetResult());
 
         var resultStop = await model.StopAsync();
 
-        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
+        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed && hasError);
     }
 }

@@ -7,7 +7,7 @@ internal class EndlessExecution : ExecutionContext<SimpleData>
 {
     public ContextRun Context { get; } = new ContextRun();
     public bool _hasError = false;
-    public Action? OnRepeat;
+    public Action<bool>? OnRepeat;
 
     public override void Dispose()
     {
@@ -18,11 +18,13 @@ internal class EndlessExecution : ExecutionContext<SimpleData>
     {
         while (true)
         {
+
+            OnRepeat?.Invoke(_hasError);
+
             if (_hasError)
                 return ExecutionResult.Ok();
 
             Thread.Sleep(50);
-            OnRepeat?.Invoke();
             
             try
             {
