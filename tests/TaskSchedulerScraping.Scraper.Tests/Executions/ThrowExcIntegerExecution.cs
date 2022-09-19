@@ -6,7 +6,7 @@ namespace TaskSchedulerScraping.Scraper.Tests.Executions;
 internal class ThrowExcIntegerExecution : ExecutionContext<IntegerData>
 {
     private int _throwOnNumber { get; }
-    private bool _hasThrow = false;
+    private bool _hasThrow = true;
     public ContextRun Context { get; } = new ContextRun();
     public Action<IntegerData>? OnSearch;
 
@@ -22,8 +22,12 @@ internal class ThrowExcIntegerExecution : ExecutionContext<IntegerData>
 
     public override ExecutionResult Execute(IntegerData data)
     {
-        if (!_hasThrow && _throwOnNumber == data.Id)
+        if (_hasThrow && _throwOnNumber == data.Id)
+        {
+            _hasThrow = false;
             throw new Exception($"Throw on number {data.Id}.");
+        }
+            
 
         OnSearch?.Invoke(data);
         

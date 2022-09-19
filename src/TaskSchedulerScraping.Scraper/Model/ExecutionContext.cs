@@ -1,7 +1,12 @@
 using TaskSchedulerScraping.Scraper.Results.Context;
+using TaskSchedulerScraping.Scraper.Exceptions;
 
 namespace TaskSchedulerScraping.Scraper.Model;
 
+/// <summary>
+/// Context execution
+/// </summary>
+/// <typeparam name="TData">Works with a type of data.</typeparam>
 public abstract class ExecutionContext<TData> : IDisposable
     where TData : class
 {
@@ -10,15 +15,22 @@ public abstract class ExecutionContext<TData> : IDisposable
     /// </summary>
     public int Id => Context.IdThread;
 
+    private ContextRun _context { get; } = new();
+
     /// <summary>
     /// Context in execution
     /// </summary>
-    internal ContextRun Context { get; } = new();
+    internal ContextRun Context => _context;
 
-    
-    public void CheckState()
+    /// <summary>
+    /// Method checks state from current execution
+    /// </summary>
+    /// <exception cref="PendingRequestException">Generates exception when has pending request</exception>
+    protected void CheckState()
     {
-
+        if (_context.RequestStatus == ContextRunEnum.Paused || 
+            _context.RequestStatus != ContextRunEnum.Disposed)
+            throw new PendingRequestException();
     }
 
     /// <summary>
@@ -32,6 +44,5 @@ public abstract class ExecutionContext<TData> : IDisposable
     /// </summary>
     public virtual void Dispose()
     {
-
     }
 }

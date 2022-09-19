@@ -27,7 +27,7 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
-        monitor.Wait(3600 * 1000, () => Assert.True(false));
+        monitor.Wait(30 * 1000, () => Assert.True(false));
 
         Assert.True(blockList.Count == 10);
 
@@ -151,7 +151,7 @@ public class ModelScraperTest
             if (i == 0)
                 continue;
 
-            Assert.True(readOnlyOrdered[i-1] < readOnlyOrdered[i]);
+            Assert.True(readOnlyOrdered[i - 1] < readOnlyOrdered[i]);
         }
 
         var resultStop = model.StopAsync().GetAwaiter().GetResult();
@@ -173,14 +173,15 @@ public class ModelScraperTest
                 () => IntegerDataFactory.GetData(100)
             )
             {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
+                WhenAllWorksEnd = (finishList) => { monitor.Resume(); },
+                WhenOccursException = (exception, data) => { return ExecutionResult.RetryOther(); }
             };
 
         var resultRun = model.Run();
 
         Assert.True(resultRun.IsSucess);
 
-        monitor.Wait(30 * 1000, () => Assert.True(false));
+        monitor.Wait(3600 * 1000, () => Assert.True(false));
 
         Assert.Equal(onError, blockList.Last());
 
@@ -190,7 +191,7 @@ public class ModelScraperTest
     }
 
     [Fact]
-    public void PauseModel_Pause_Pause()
+    public async Task PauseModel_Pause_Pause()
     {
         var monitor = new SimpleMonitor();
         IModelScraper model =
@@ -210,9 +211,13 @@ public class ModelScraperTest
 
         var resultPause = model.PauseAsync();
 
-        monitor.Wait(30 * 1000, () => Assert.True(false));
+        var pause = await model.PauseAsync(true);
 
-        var resultStop = model.StopAsync().GetAwaiter().GetResult();
+        Assert.True(pause.IsSucess);
+        
+        monitor.Wait(5 * 1000, ()=>model.PauseAsync(false));
+
+        var resultStop = await model.StopAsync();
 
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
