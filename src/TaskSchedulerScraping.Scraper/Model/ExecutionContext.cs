@@ -29,7 +29,7 @@ public abstract class ExecutionContext<TData> : IDisposable
     protected void CheckState()
     {
         if (_context.RequestStatus == ContextRunEnum.Paused || 
-            _context.RequestStatus != ContextRunEnum.Disposed)
+            _context.RequestStatus == ContextRunEnum.Disposed)
             throw new PendingRequestException();
     }
 

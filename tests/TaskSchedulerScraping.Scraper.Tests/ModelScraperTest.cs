@@ -7,7 +7,7 @@ namespace TaskSchedulerScraping.Scraper.Tests;
 
 public class ModelScraperTest
 {
-    [Fact]
+    [Fact(Timeout = 5000)]
     public void ExecuteModel_Exec_Add10ItemsToListWith1Thread()
     {
         BlockingCollection<DateTime> blockList = new();
@@ -36,7 +36,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact]
+    [Fact(Timeout = 5000)]
     public void ExecuteModel_Exec_Add20ItemsToListWith2Thread()
     {
         BlockingCollection<DateTime> blockList = new();
@@ -65,7 +65,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact]
+    [Fact(Timeout = 5000)]
     public void ExecuteModel_Exec_Add1000ItemsToListWith10Thread()
     {
         BlockingCollection<DateTime> blockList = new();
@@ -94,7 +94,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact]
+    [Fact(Timeout = 5000)]
     public void ExecuteModel_Exec_Add1000ItemsToListWith10ThreadWithConfirmationData()
     {
         BlockingCollection<int> blockList = new();
@@ -123,7 +123,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact]
+    [Fact(Timeout = 5000)]
     public void ExecuteModel_Oredered_ChecksOrderFromData()
     {
         BlockingCollection<int> blockList = new();
@@ -159,7 +159,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact]
+    [Fact(Timeout = 5000)]
     public void ExecuteModel_Oredered_ChecksOrderFromDataWithException()
     {
         const int onError = 32;
@@ -190,7 +190,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact]
+    [Fact(Timeout = 5000)]
     public async Task PauseModel_Pause_Pause()
     {
         bool hasError = false;
@@ -221,5 +221,35 @@ public class ModelScraperTest
         var resultStop = await model.StopAsync();
 
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed && hasError);
+    }
+
+    [Fact(Timeout = 2000)]
+    public async Task StopModel_Dispose_Stop()
+    {
+        var monitor = new SimpleMonitor();
+        IModelScraper model =
+            new ModelScraper<EndlessExecution, SimpleData>
+            (
+                1,
+                () => new EndlessExecution(),
+                () => SimpleDataFactory.GetData(1)
+            )
+            {
+                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
+            };
+
+        var resultRun = model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        var cancellationTokenSource = new CancellationTokenSource();
+
+        new Thread(() => { Thread.Sleep(1000); cancellationTokenSource.Cancel(); });
+
+        var resultStop = await model.StopAsync(cancellationTokenSource.Token);
+
+        Assert.True(resultStop.IsSucess);
+
+        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 }
