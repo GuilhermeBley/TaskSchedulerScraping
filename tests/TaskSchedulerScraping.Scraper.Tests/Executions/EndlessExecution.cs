@@ -5,7 +5,7 @@ namespace TaskSchedulerScraping.Scraper.Tests.Executions;
 
 internal class EndlessExecution : ExecutionContext<SimpleData>
 {
-    public ContextRun Context { get; } = new ContextRun();
+    public bool IsActiveError = true;
     public bool _hasError = false;
     public Action<bool>? OnRepeat;
 
@@ -32,7 +32,8 @@ internal class EndlessExecution : ExecutionContext<SimpleData>
             }
             catch
             {
-                _hasError = true;
+                if (IsActiveError)
+                    _hasError = true;
                 throw;
             }
             

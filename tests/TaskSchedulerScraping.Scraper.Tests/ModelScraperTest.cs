@@ -123,7 +123,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 5000)]
+    [Fact(Timeout = 3000)]
     public void ExecuteModel_Oredered_ChecksOrderFromData()
     {
         BlockingCollection<int> blockList = new();
@@ -143,7 +143,7 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
-        monitor.Wait(30 * 1000, () => Assert.True(false));
+        monitor.Wait(2 * 1000, () => Assert.True(false));
 
         IReadOnlyList<int> readOnlyOrdered = blockList.ToList();
         for (int i = 0; i < blockList.Count; i++)
@@ -159,7 +159,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 5000)]
+    [Fact(Timeout = 2000)]
     public void ExecuteModel_Oredered_ChecksOrderFromDataWithException()
     {
         const int onError = 32;
@@ -181,7 +181,7 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
-        monitor.Wait(3600 * 1000, () => Assert.True(false));
+        monitor.Wait(1 * 1000, () => Assert.True(false));
 
         Assert.Equal(onError, blockList.Last());
 
@@ -190,7 +190,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 5000)]
+    [Fact(Timeout = 2000)]
     public async Task PauseModel_Pause_Pause()
     {
         bool hasError = false;
@@ -216,7 +216,7 @@ public class ModelScraperTest
 
         Assert.True(pause.IsSucess);
         
-        monitor.Wait(2 * 1000, ()=>model.PauseAsync(false).GetAwaiter().GetResult());
+        monitor.Wait(1 * 1000, ()=>model.PauseAsync(false).GetAwaiter().GetResult());
 
         var resultStop = await model.StopAsync();
 
@@ -251,5 +251,61 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess);
 
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
+    }
+
+    [Fact(Timeout = 2000)]
+    public async Task PauseModel_Pause_CancelPause()
+    {
+        var monitor = new SimpleMonitor();
+        IModelScraper model =
+            new ModelScraper<EndlessWhileExecution, SimpleData>
+            (
+                1,
+                () => new EndlessWhileExecution(),
+                () => SimpleDataFactory.GetData(1)
+            )
+            {
+                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
+            };
+
+        var resultRun = model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        var cancellationTokenSource = new CancellationTokenSource();
+
+        new Thread(
+            () => { Thread.Sleep(50); cancellationTokenSource.Cancel(); }
+        ).Start();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            ()=>model.PauseAsync(true, cancellationToken: cancellationTokenSource.Token));
+    }
+
+    [Fact(Timeout = 2000)]
+    public async Task StopModel_Dispose_CancelStop()
+    {
+        var monitor = new SimpleMonitor();
+        IModelScraper model =
+            new ModelScraper<EndlessWhileExecution, SimpleData>
+            (
+                1,
+                () => new EndlessWhileExecution(),
+                () => SimpleDataFactory.GetData(1)
+            )
+            {
+                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
+            };
+
+        var resultRun = model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        var cancellationTokenSource = new CancellationTokenSource();
+
+        new Thread(() => { Thread.Sleep(50); cancellationTokenSource.Cancel(); }).Start();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            ()=>model.StopAsync(cancellationToken: cancellationTokenSource.Token));
     }
 }
