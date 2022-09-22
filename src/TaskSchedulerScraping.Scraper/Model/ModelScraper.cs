@@ -91,17 +91,43 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// </summary>
     public Func<Exception, TData, ExecutionResult>? WhenOccursException;
 
+    /// <summary>
+    /// Instance of type <see cref="ModelScraper"/>
+    /// </summary>
+    /// <param name="countScraper">Quantity scrappers to run</param>
+    /// <param name="getContext">Func to get new context</param>
+    /// <param name="getData">Func to get all data to search</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     public ModelScraper(
         int countScraper,
         Func<TExecutionContext> getContext,
         Func<IEnumerable<TData>> getData)
     {
+        if (countScraper < 1)
+            throw new ArgumentOutOfRangeException($"{nameof(countScraper)} should be more than zero.");
+
         _countScraper = countScraper;
         _getContext = getContext;
         _searchData =
             new ConcurrentQueue<TData>(
                 getData.Invoke() ?? throw new ArgumentNullException(nameof(getData))
             );
+    }
+
+    /// <inheritdoc path="*"/>
+    public ModelScraper(
+        int countScraper,
+        Func<TExecutionContext> getContext,
+        Func<IEnumerable<TData>> getData,
+        Func<Exception, TData, ExecutionResult>? whenOccursException = null,
+        Action<ResultBase<TData>>? whenDataFinished = null,
+        Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null)
+        : this(countScraper, getContext, getData)
+    {
+        WhenOccursException = whenOccursException;
+        WhenDataFinished = whenDataFinished;
+        WhenAllWorksEnd = whenAllWorksEnd;
     }
 
     /// <summary>
