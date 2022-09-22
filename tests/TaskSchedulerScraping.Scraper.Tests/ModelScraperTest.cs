@@ -8,7 +8,7 @@ namespace TaskSchedulerScraping.Scraper.Tests;
 public class ModelScraperTest
 {
     [Fact(Timeout = 5000)]
-    public void ExecuteModel_Exec_Add10ItemsToListWith1Thread()
+    public async Task ExecuteModel_Exec_Add10ItemsToListWith1Thread()
     {
         BlockingCollection<DateTime> blockList = new();
         var monitor = new SimpleMonitor();
@@ -17,11 +17,11 @@ public class ModelScraperTest
             (
                 1,
                 () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
-                () => SimpleDataFactory.GetData(10),
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(10); },
                 whenAllWorksEnd: (finishList) => { monitor.Resume(); }
             );
 
-        var resultRun = model.Run();
+        var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
@@ -35,7 +35,7 @@ public class ModelScraperTest
     }
 
     [Fact(Timeout = 5000)]
-    public void ExecuteModel_Exec_Add20ItemsToListWith2Thread()
+    public async Task ExecuteModel_Exec_Add20ItemsToListWith2Thread()
     {
         BlockingCollection<DateTime> blockList = new();
         var monitor = new SimpleMonitor();
@@ -44,11 +44,11 @@ public class ModelScraperTest
             (
                 2,
                 () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
-                () => SimpleDataFactory.GetData(20),
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(20); },
                 whenAllWorksEnd: (finishList) => { monitor.Resume(); }
             );
 
-        var resultRun = model.Run();
+        var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
@@ -62,7 +62,7 @@ public class ModelScraperTest
     }
 
     [Fact(Timeout = 5000)]
-    public void ExecuteModel_Exec_Add1000ItemsToListWith10Thread()
+    public async Task ExecuteModel_Exec_Add1000ItemsToListWith10Thread()
     {
         BlockingCollection<DateTime> blockList = new();
         var monitor = new SimpleMonitor();
@@ -71,11 +71,11 @@ public class ModelScraperTest
             (
                 10,
                 () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
-                () => SimpleDataFactory.GetData(1000),
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1000); },
                 whenAllWorksEnd: (finishList) => { monitor.Resume(); }
             );
 
-        var resultRun = model.Run();
+        var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
@@ -89,7 +89,7 @@ public class ModelScraperTest
     }
 
     [Fact(Timeout = 5000)]
-    public void ExecuteModel_Exec_Add1000ItemsToListWith10ThreadWithConfirmationData()
+    public async Task ExecuteModel_Exec_Add1000ItemsToListWith10ThreadWithConfirmationData()
     {
         BlockingCollection<int> blockList = new();
         var monitor = new SimpleMonitor();
@@ -98,11 +98,11 @@ public class ModelScraperTest
             (
                 10,
                 () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(Thread.CurrentThread.ManagedThreadId); } },
-                () => SimpleDataFactory.GetData(1000),
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1000); },
                 whenAllWorksEnd: (finishList) => { monitor.Resume(); }
             );
 
-        var resultRun = model.Run();
+        var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
@@ -116,7 +116,7 @@ public class ModelScraperTest
     }
 
     [Fact(Timeout = 3000)]
-    public void ExecuteModel_Oredered_ChecksOrderFromData()
+    public async Task ExecuteModel_Oredered_ChecksOrderFromData()
     {
         BlockingCollection<int> blockList = new();
         var monitor = new SimpleMonitor();
@@ -125,11 +125,11 @@ public class ModelScraperTest
             (
                 1,
                 () => new IntegerExecution() { OnSearch = (data) => { blockList.Add(data.Id); } },
-                () => IntegerDataFactory.GetData(100),
+                async () => { await Task.CompletedTask; return IntegerDataFactory.GetData(100); },
                 whenAllWorksEnd: (finishList) => { monitor.Resume(); }
             );
 
-        var resultRun = model.Run();
+        var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
@@ -150,7 +150,7 @@ public class ModelScraperTest
     }
 
     [Fact(Timeout = 2000)]
-    public void ExecuteModel_Oredered_ChecksOrderFromDataWithException()
+    public async Task ExecuteModel_Oredered_ChecksOrderFromDataWithException()
     {
         const int onError = 32;
         BlockingCollection<int> blockList = new();
@@ -160,12 +160,12 @@ public class ModelScraperTest
             (
                 1,
                 () => new ThrowExcIntegerExecution(onError) { OnSearch = (data) => { blockList.Add(data.Id); } },
-                () => IntegerDataFactory.GetData(100),
+                async () => { await Task.CompletedTask; return IntegerDataFactory.GetData(100); },
                 whenAllWorksEnd: (finishList) => { monitor.Resume(); },
                 whenOccursException: (exception, data) => { return ExecutionResult.RetryOther(); }
             );
 
-        var resultRun = model.Run();
+        var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
@@ -188,11 +188,11 @@ public class ModelScraperTest
             (
                 1,
                 () => new EndlessExecution() { OnRepeat = (containsError) => { hasError = containsError; } },
-                () => SimpleDataFactory.GetData(1),
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1); },
                 whenAllWorksEnd: (finishList) => { monitor.Resume(); }
             );
 
-        var resultRun = model.Run();
+        var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
@@ -218,11 +218,11 @@ public class ModelScraperTest
             (
                 1,
                 () => new EndlessExecution(),
-                () => SimpleDataFactory.GetData(1),
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1); },
                 whenAllWorksEnd: (finishList) => { monitor.Resume(); }
             );
 
-        var resultRun = model.Run();
+        var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
@@ -246,11 +246,11 @@ public class ModelScraperTest
             (
                 1,
                 () => new EndlessWhileExecution(),
-                () => SimpleDataFactory.GetData(1),
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1); },
                 whenAllWorksEnd: (finishList) => { monitor.Resume(); }
             );
 
-        var resultRun = model.Run();
+        var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
@@ -273,11 +273,11 @@ public class ModelScraperTest
             (
                 1,
                 () => new EndlessWhileExecution(),
-                () => SimpleDataFactory.GetData(1),
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1); },
                 whenAllWorksEnd: (finishList) => { monitor.Resume(); }
             );
 
-        var resultRun = model.Run();
+        var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
@@ -288,4 +288,5 @@ public class ModelScraperTest
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             ()=>model.StopAsync(cancellationToken: cancellationTokenSource.Token));
     }
+
 }
