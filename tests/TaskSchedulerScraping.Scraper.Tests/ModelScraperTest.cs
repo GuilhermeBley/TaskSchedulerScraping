@@ -17,11 +17,9 @@ public class ModelScraperTest
             (
                 1,
                 () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
-                () => SimpleDataFactory.GetData(10)
-            )
-            {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
-            };
+                () => SimpleDataFactory.GetData(10),
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); }
+            );
 
         var resultRun = model.Run();
 
@@ -46,11 +44,9 @@ public class ModelScraperTest
             (
                 2,
                 () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
-                () => SimpleDataFactory.GetData(20)
-            )
-            {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
-            };
+                () => SimpleDataFactory.GetData(20),
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); }
+            );
 
         var resultRun = model.Run();
 
@@ -75,11 +71,9 @@ public class ModelScraperTest
             (
                 10,
                 () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
-                () => SimpleDataFactory.GetData(1000)
-            )
-            {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
-            };
+                () => SimpleDataFactory.GetData(1000),
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); }
+            );
 
         var resultRun = model.Run();
 
@@ -104,11 +98,9 @@ public class ModelScraperTest
             (
                 10,
                 () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(Thread.CurrentThread.ManagedThreadId); } },
-                () => SimpleDataFactory.GetData(1000)
-            )
-            {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
-            };
+                () => SimpleDataFactory.GetData(1000),
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); }
+            );
 
         var resultRun = model.Run();
 
@@ -133,11 +125,9 @@ public class ModelScraperTest
             (
                 1,
                 () => new IntegerExecution() { OnSearch = (data) => { blockList.Add(data.Id); } },
-                () => IntegerDataFactory.GetData(100)
-            )
-            {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
-            };
+                () => IntegerDataFactory.GetData(100),
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); }
+            );
 
         var resultRun = model.Run();
 
@@ -170,12 +160,10 @@ public class ModelScraperTest
             (
                 1,
                 () => new ThrowExcIntegerExecution(onError) { OnSearch = (data) => { blockList.Add(data.Id); } },
-                () => IntegerDataFactory.GetData(100)
-            )
-            {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); },
-                WhenOccursException = (exception, data) => { return ExecutionResult.RetryOther(); }
-            };
+                () => IntegerDataFactory.GetData(100),
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); },
+                whenOccursException: (exception, data) => { return ExecutionResult.RetryOther(); }
+            );
 
         var resultRun = model.Run();
 
@@ -200,11 +188,9 @@ public class ModelScraperTest
             (
                 1,
                 () => new EndlessExecution() { OnRepeat = (containsError) => { hasError = containsError; } },
-                () => SimpleDataFactory.GetData(1)
-            )
-            {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
-            };
+                () => SimpleDataFactory.GetData(1),
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); }
+            );
 
         var resultRun = model.Run();
 
@@ -232,11 +218,9 @@ public class ModelScraperTest
             (
                 1,
                 () => new EndlessExecution(),
-                () => SimpleDataFactory.GetData(1)
-            )
-            {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
-            };
+                () => SimpleDataFactory.GetData(1),
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); }
+            );
 
         var resultRun = model.Run();
 
@@ -262,11 +246,9 @@ public class ModelScraperTest
             (
                 1,
                 () => new EndlessWhileExecution(),
-                () => SimpleDataFactory.GetData(1)
-            )
-            {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
-            };
+                () => SimpleDataFactory.GetData(1),
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); }
+            );
 
         var resultRun = model.Run();
 
@@ -291,11 +273,9 @@ public class ModelScraperTest
             (
                 1,
                 () => new EndlessWhileExecution(),
-                () => SimpleDataFactory.GetData(1)
-            )
-            {
-                WhenAllWorksEnd = (finishList) => { monitor.Resume(); }
-            };
+                () => SimpleDataFactory.GetData(1),
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); }
+            );
 
         var resultRun = model.Run();
 

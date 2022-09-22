@@ -59,6 +59,21 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// Concurrent list of execution context
     /// </summary>
     private BlockingCollection<TExecutionContext> _contexts { get; } = new();
+    
+    /// <summary>
+    /// It is invoked when all workers finished
+    /// </summary>
+    private Action<IEnumerable<ResultBase<Exception?>>>? WhenAllWorksEnd { get; }
+
+    /// <summary>
+    /// It is invoked when the data have searched with success or no.
+    /// </summary>
+    private Action<ResultBase<TData>>? WhenDataFinished { get; }
+
+    /// <summary>
+    /// Called when exception occurs in a execution
+    /// </summary>
+    private Func<Exception, TData, ExecutionResult>? WhenOccursException { get; }
 
     /// <summary>
     /// Scraping to execute
@@ -75,21 +90,6 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
     /// <inheritdoc/>
     public ModelStateEnum State => _status.State;
-
-    /// <summary>
-    /// It is invoked when all workers finished
-    /// </summary>
-    public Action<IEnumerable<ResultBase<Exception?>>>? WhenAllWorksEnd;
-
-    /// <summary>
-    /// It is invoked when the data have searched with success or no.
-    /// </summary>
-    public Action<ResultBase<TData>>? WhenDataFinished;
-
-    /// <summary>
-    /// Called when exception occurs in a execution
-    /// </summary>
-    public Func<Exception, TData, ExecutionResult>? WhenOccursException;
 
     /// <summary>
     /// Instance of type <see cref="ModelScraper"/>

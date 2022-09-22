@@ -6,7 +6,6 @@ namespace TaskSchedulerScraping.Scraper.Tests.Executions;
 internal class EndlessWhileExecution : ExecutionContext<SimpleData>
 {
     public bool InRepeat = true;
-    public Action<bool>? OnRepeat;
 
     public override void Dispose()
     {
