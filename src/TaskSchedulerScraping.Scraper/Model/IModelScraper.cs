@@ -36,8 +36,11 @@ public interface IModelScraper
     /// <summary>
     /// Requests run scrapers
     /// </summary>
+    /// <remarks>
+    ///     <para>This method is awaitable because the data to search is collected async</para>
+    /// </remarks>
     /// <returns><see cref="ResultBase{RunModel}"/></returns>
-    ResultBase<RunModel> Run();
+    Task<ResultBase<RunModel>> Run();
 
     /// <summary>
     /// Requests stop async

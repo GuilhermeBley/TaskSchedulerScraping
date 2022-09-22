@@ -35,9 +35,34 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     private readonly Func<TExecutionContext> _getContext;
 
     /// <summary>
+    /// Function to get data to search
+    /// </summary>
+    private readonly Func<Task<IEnumerable<TData>>> _getData;
+
+    /// <summary>
     /// FIFO of searches to do
     /// </summary>
-    private readonly ConcurrentQueue<TData> _searchData;
+    private ConcurrentQueue<TData> _searchData = new();
+
+    /// <summary>
+    /// Concurrent list of execution context
+    /// </summary>
+    private readonly BlockingCollection<TExecutionContext> _contexts = new();
+
+    /// <summary>
+    /// It is invoked when all workers finished
+    /// </summary>
+    private readonly Action<IEnumerable<ResultBase<Exception?>>>? _whenAllWorksEnd;
+
+    /// <summary>
+    /// It is invoked when the data have searched with success or no.
+    /// </summary>
+    private readonly Action<ResultBase<TData>>? _whenDataFinished;
+
+    /// <summary>
+    /// Called when exception occurs in a execution
+    /// </summary>
+    private readonly Func<Exception, TData, ExecutionResult>? _whenOccursException;
 
     /// <summary>
     /// Thread in pausing
@@ -53,26 +78,6 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// Thread in disposing
     /// </summary>
     private bool _disposing = false;
-
-    /// <summary>
-    /// Concurrent list of execution context
-    /// </summary>
-    private BlockingCollection<TExecutionContext> _contexts { get; } = new();
-    
-    /// <summary>
-    /// It is invoked when all workers finished
-    /// </summary>
-    private Action<IEnumerable<ResultBase<Exception?>>>? WhenAllWorksEnd { get; }
-
-    /// <summary>
-    /// It is invoked when the data have searched with success or no.
-    /// </summary>
-    private Action<ResultBase<TData>>? WhenDataFinished { get; }
-
-    /// <summary>
-    /// Called when exception occurs in a execution
-    /// </summary>
-    private Func<Exception, TData, ExecutionResult>? WhenOccursException { get; }
 
     /// <summary>
     /// Scraping to execute
@@ -101,32 +106,29 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     public ModelScraper(
         int countScraper,
         Func<TExecutionContext> getContext,
-        Func<IEnumerable<TData>> getData)
+        Func<Task<IEnumerable<TData>>> getData)
     {
         if (countScraper < 1)
             throw new ArgumentOutOfRangeException($"{nameof(countScraper)} should be more than zero.");
 
         _countScraper = countScraper;
         _getContext = getContext;
-        _searchData =
-            new ConcurrentQueue<TData>(
-                getData.Invoke() ?? throw new ArgumentNullException(nameof(getData))
-            );
+        _getData = getData;
     }
 
     /// <inheritdoc path="*"/>
     public ModelScraper(
         int countScraper,
         Func<TExecutionContext> getContext,
-        Func<IEnumerable<TData>> getData,
+        Func<Task<IEnumerable<TData>>> getData,
         Func<Exception, TData, ExecutionResult>? whenOccursException = null,
         Action<ResultBase<TData>>? whenDataFinished = null,
         Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null)
         : this(countScraper, getContext, getData)
     {
-        WhenOccursException = whenOccursException;
-        WhenDataFinished = whenDataFinished;
-        WhenAllWorksEnd = whenAllWorksEnd;
+        _whenOccursException = whenOccursException;
+        _whenDataFinished = whenDataFinished;
+        _whenAllWorksEnd = whenAllWorksEnd;
     }
 
     /// <summary>
@@ -184,7 +186,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         }
     }
 
-    public ResultBase<RunModel> Run()
+    public async Task<ResultBase<RunModel>> Run()
     {
         if (_running == true)
             return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "In process to start."));
@@ -203,6 +205,8 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "Already started."));
             }
 
+            _searchData = new ConcurrentQueue<TData>(await _getData.Invoke());
+
             for (int indexScraper = 0; indexScraper < _countScraper; indexScraper++)
             {
                 var thread =
@@ -219,7 +223,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                             if (IsFinished())
                             {
                                 _status.SetStatus(ModelStateEnum.Disposed);
-                                WhenAllWorksEnd?.Invoke(_endExec);
+                                _whenAllWorksEnd?.Invoke(_endExec);
                             }
                         }
 
@@ -431,21 +435,21 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         {
             exception = e;
             executionResult =
-                WhenOccursException is null ? ExecutionResult.ThrowException(e) :
-                WhenOccursException.Invoke(e, dataToSearch);
+                _whenOccursException is null ? ExecutionResult.ThrowException(e) :
+                _whenOccursException.Invoke(e, dataToSearch);
         }
 
         if (executionResult.ActionToNextData == ExecutionResultEnum.Next &&
             _searchData.Any())
         {
-            WhenDataFinished?.Invoke(ResultBase<TData>.GetSucess(dataToSearch));
+            _whenDataFinished?.Invoke(ResultBase<TData>.GetSucess(dataToSearch));
             RunLoopSearch(executionContext, null);
             return;
         }
 
         if (executionResult.ActionToNextData == ExecutionResultEnum.RetrySame)
         {
-            WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
+            _whenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
             RunLoopSearch(executionContext, dataToSearch);
             return;
         }
@@ -453,7 +457,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         if (executionResult.ActionToNextData == ExecutionResultEnum.RetryOther)
         {
             _searchData.Enqueue(dataToSearch);
-            WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
+            _whenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
             RunLoopSearch(executionContext, null);
             return;
         }
@@ -463,7 +467,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         {
 
             _searchData.Enqueue(dataToSearch);
-            WhenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
+            _whenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
             context.SetCurrentStatusWithException(exception);
             return;
         }
