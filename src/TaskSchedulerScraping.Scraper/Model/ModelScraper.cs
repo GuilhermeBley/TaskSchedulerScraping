@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using TaskSchedulerScraping.Scraper.Results.Models;
-using TaskSchedulerScraping.Scraper.Results.Context;
 using TaskSchedulerScraping.Scraper.Results;
 using TaskSchedulerScraping.Scraper.Exceptions;
 
