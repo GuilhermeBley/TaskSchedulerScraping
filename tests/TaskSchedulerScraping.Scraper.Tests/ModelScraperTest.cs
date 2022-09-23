@@ -201,8 +201,8 @@ public class ModelScraperTest
         var pause = await model.PauseAsync(true);
 
         Assert.True(pause.IsSucess);
-        
-        monitor.Wait(1 * 1000, ()=>model.PauseAsync(false).GetAwaiter().GetResult());
+
+        monitor.Wait(1 * 1000, () => model.PauseAsync(false).GetAwaiter().GetResult());
 
         var resultStop = await model.StopAsync();
 
@@ -261,7 +261,7 @@ public class ModelScraperTest
         ).Start();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            ()=>model.PauseAsync(true, cancellationToken: cancellationTokenSource.Token));
+            () => model.PauseAsync(true, cancellationToken: cancellationTokenSource.Token));
     }
 
     [Fact(Timeout = 2000)]
@@ -286,7 +286,92 @@ public class ModelScraperTest
         new Thread(() => { Thread.Sleep(50); cancellationTokenSource.Cancel(); }).Start();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            ()=>model.StopAsync(cancellationToken: cancellationTokenSource.Token));
+            () => model.StopAsync(cancellationToken: cancellationTokenSource.Token));
     }
 
+    [Fact(Timeout = 1000)]
+    public async Task ExecuteModel_Exec_With0DataAnd1ThreadWithoutError()
+    {
+        BlockingCollection<DateTime> blockList = new();
+        var isFinished = false;
+        var monitor = new SimpleMonitor();
+        IModelScraper model =
+            new ModelScraper<SimpleExecution, SimpleData>
+            (
+                1,
+                () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(0); },
+                whenAllWorksEnd: (finishList) => { isFinished = true; monitor.Resume(); Assert.True(finishList.All(f => f.IsSucess)); },
+                whenDataFinished: (result) => { Assert.True(false); }
+            );
+
+        var resultRun = await model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        if (!isFinished)
+            monitor.Wait(1 * 1000, () => Assert.True(isFinished));
+
+        Assert.True(!blockList.Any());
+
+        var resultStop = model.StopAsync().GetAwaiter().GetResult();
+
+        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
+    }
+
+    [Fact(Timeout = 1000)]
+    public async Task ExecuteModel_Exec_With0DataAnd10ThreadWithoutError()
+    {
+        BlockingCollection<DateTime> blockList = new();
+        var isFinished = false;
+        var monitor = new SimpleMonitor();
+        IModelScraper model =
+            new ModelScraper<SimpleExecution, SimpleData>
+            (
+                10,
+                () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(0); },
+                whenAllWorksEnd: (finishList) => { isFinished = true; monitor.Resume(); Assert.True(finishList.All(f => f.IsSucess)); },
+                whenDataFinished: (result) => { Assert.True(false); }
+            );
+
+        var resultRun = await model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        if (!isFinished)
+            monitor.Wait(1 * 1000, () => Assert.True(isFinished));
+
+        Assert.True(!blockList.Any());
+
+        var resultStop = model.StopAsync().GetAwaiter().GetResult();
+
+        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
+    }
+
+    [Fact(Timeout = 1000)]
+    public async Task ExecuteModel_Exec_With0DataAnd100ThreadWithoutError()
+    {
+        BlockingCollection<DateTime> blockList = new();
+        var monitor = new SimpleMonitor();
+        IModelScraper model =
+            new ModelScraper<SimpleExecution, SimpleData>
+            (
+                100,
+                () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(0); },
+                whenAllWorksEnd: (finishList) => { monitor.Resume(); Assert.True(finishList.All(f => f.IsSucess)); },
+                whenDataFinished: (result) => { Assert.True(false); }
+            );
+
+        var resultRun = await model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        Assert.True(!blockList.Any());
+
+        var resultStop = model.StopAsync().GetAwaiter().GetResult();
+
+        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
+    }
 }

@@ -10,7 +10,7 @@ internal static class SimpleDataFactory
 
     public static IEnumerable<SimpleData> GetData(int length)
     {
-        if (length < 1)
+        if (length < 0)
             throw new IndexOutOfRangeException($"{nameof(length)} should be more than '0'.");
 
         var list = new List<SimpleData>();
