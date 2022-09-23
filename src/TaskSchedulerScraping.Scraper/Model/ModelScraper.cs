@@ -439,8 +439,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 _whenOccursException.Invoke(e, dataToSearch);
         }
 
-        if (executionResult.ActionToNextData == ExecutionResultEnum.Next &&
-            _searchData.Any())
+        if (executionResult.ActionToNextData == ExecutionResultEnum.Next)
         {
             _whenDataFinished?.Invoke(ResultBase<TData>.GetSucess(dataToSearch));
             RunLoopSearch(executionContext, null);
@@ -462,10 +461,8 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             return;
         }
 
-        if (executionResult.ActionToNextData == ExecutionResultEnum.ThrowException &&
-            exception is not null)
+        if (executionResult.ActionToNextData == ExecutionResultEnum.ThrowException)
         {
-
             _searchData.Enqueue(dataToSearch);
             _whenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
             context.SetCurrentStatusWithException(exception);
@@ -481,9 +478,6 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <returns>true : all finished, false : in progress or isn't running</returns>
     private bool IsFinished()
     {
-        if (_status.State == ModelStateEnum.NotRunning)
-            return false;
-
         if (_countScraper != _endExec.Count)
             return false;
 

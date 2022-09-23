@@ -116,7 +116,7 @@ public sealed class ContextRun
     /// </remarks>
     /// <param name="e">Exception relationed with the disposed</param>
     /// <returns><see cref="ResultBase"/></returns>
-    internal ResultBase<RequestStatusEnum> SetCurrentStatusWithException(Exception e)
+    internal ResultBase<RequestStatusEnum> SetCurrentStatusWithException(Exception? e)
     {
         var requestStatus = ContextRunEnum.DisposedWithError;
 

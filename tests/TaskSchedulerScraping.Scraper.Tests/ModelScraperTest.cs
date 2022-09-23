@@ -374,4 +374,85 @@ public class ModelScraperTest
 
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
+
+    [Fact(Timeout = 1000)]
+    public async Task ExecuteModel_Exec_WhenAllWorkFinished()
+    {
+        BlockingCollection<DateTime> blockList = new();
+        bool isWhenAllWorksFinished = false;
+        var monitor = new SimpleMonitor();
+        IModelScraper model =
+            new ModelScraper<SimpleExecution, SimpleData>
+            (
+                50,
+                () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(0); },
+                whenAllWorksEnd: (finishList) => { isWhenAllWorksFinished = true; }
+            );
+
+        var resultRun = await model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        Assert.True(!blockList.Any());
+
+        var resultStop = model.StopAsync().GetAwaiter().GetResult();
+
+        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed && isWhenAllWorksFinished);
+    }
+
+    [Fact(Timeout = 1000)]
+    public async Task ExecuteModel_Exec_WhenDataFinished()
+    {
+        BlockingCollection<DateTime> blockList = new();
+        bool isWhenDataFinished = false;
+        var monitor = new SimpleMonitor();
+        IModelScraper model =
+            new ModelScraper<SimpleExecution, SimpleData>
+            (
+                50,
+                () => new SimpleExecution() { OnSearch = (timer) => { blockList.Add(timer); } },
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1); },
+                whenDataFinished: (data) => { isWhenDataFinished = true; }
+            );
+
+        var resultRun = await model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        Assert.True(blockList.Any());
+
+        var resultStop = model.StopAsync().GetAwaiter().GetResult();
+
+        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed && isWhenDataFinished);
+    }
+    
+    [Fact(Timeout = 1000)]
+    public async Task ExecuteModel_Exec_whenOccursExceptionOk()
+    {
+        BlockingCollection<int> blockList = new();
+        bool isWhenDataFinished = false;
+        bool isSucessDataSearch = false;
+        var monitor = new SimpleMonitor();
+        IModelScraper model =
+            new ModelScraper<ThrowExcIntegerExecution, IntegerData>
+            (
+                50,
+                () => new ThrowExcIntegerExecution(1) { OnSearch = (data) => { blockList.Add(data.Id); } },
+                async () => { await Task.CompletedTask; return IntegerDataFactory.GetData(1); },
+                whenDataFinished: (data) => { isSucessDataSearch = data.IsSucess; isWhenDataFinished = true; },
+                whenOccursException: (ex, data) => { return ExecutionResult.Ok(); }
+            );
+
+        var resultRun = await model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        Assert.True(!blockList.Any());
+
+        var resultStop = model.StopAsync().GetAwaiter().GetResult();
+
+        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed && 
+            isWhenDataFinished && isSucessDataSearch);
+    }
 }
