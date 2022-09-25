@@ -14,7 +14,7 @@ internal class EndlessExecution : ExecutionContext<SimpleData>
 
     }
 
-    public override ExecutionResult Execute(SimpleData data)
+    public override ExecutionResult Execute(SimpleData data, CancellationToken cancellationToken = default)
     {
         while (true)
         {
@@ -28,7 +28,7 @@ internal class EndlessExecution : ExecutionContext<SimpleData>
             
             try
             {
-                CheckState();
+                cancellationToken.ThrowIfCancellationRequested();
             }
             catch
             {

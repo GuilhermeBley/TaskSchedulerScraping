@@ -16,7 +16,7 @@ internal class SimpleExecution : ExecutionContext<SimpleData>
         
     }
 
-    public override ExecutionResult Execute(SimpleData data)
+    public override ExecutionResult Execute(SimpleData data, CancellationToken cancellationToken = default)
     {
         var time = DateTime.Now;
         _execHours.Add(time);

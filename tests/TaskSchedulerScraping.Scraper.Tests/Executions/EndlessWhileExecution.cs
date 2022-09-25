@@ -12,7 +12,7 @@ internal class EndlessWhileExecution : ExecutionContext<SimpleData>
 
     }
 
-    public override ExecutionResult Execute(SimpleData data)
+    public override ExecutionResult Execute(SimpleData data, CancellationToken cancellationToken = default)
     {
         while (InRepeat)
             Thread.Sleep(50);

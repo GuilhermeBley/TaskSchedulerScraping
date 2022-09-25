@@ -20,7 +20,7 @@ internal class ThrowExcIntegerExecution : ExecutionContext<IntegerData>
 
     }
 
-    public override ExecutionResult Execute(IntegerData data)
+    public override ExecutionResult Execute(IntegerData data, CancellationToken cancellationToken = default)
     {
         if (_hasThrow && _throwOnNumber == data.Id)
         {

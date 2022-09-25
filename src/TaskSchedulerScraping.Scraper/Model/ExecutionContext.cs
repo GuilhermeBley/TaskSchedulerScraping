@@ -1,5 +1,4 @@
 using TaskSchedulerScraping.Scraper.Results.Context;
-using TaskSchedulerScraping.Scraper.Exceptions;
 
 namespace TaskSchedulerScraping.Scraper.Model;
 

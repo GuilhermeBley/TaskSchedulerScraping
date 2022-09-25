@@ -14,7 +14,7 @@ internal class IntegerExecution : ExecutionContext<IntegerData>
         
     }
 
-    public override ExecutionResult Execute(IntegerData data)
+    public override ExecutionResult Execute(IntegerData data, CancellationToken cancellationToken = default)
     {
         OnSearch?.Invoke(data);
 
