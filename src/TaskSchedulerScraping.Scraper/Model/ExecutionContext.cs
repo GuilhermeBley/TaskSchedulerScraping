@@ -15,12 +15,18 @@ public abstract class ExecutionContext<TData> : IDisposable
     /// </summary>
     public int Id => Context.IdThread;
 
-    private ContextRun _context { get; } = new();
-
     /// <summary>
     /// Context in execution
     /// </summary>
+    private ContextRun _context { get; } = new();
+
+    /// <inheritdoc cref="_context" path="*"/>
     internal ContextRun Context => _context;
+
+    /// <summary>
+    /// Cancellation token
+    /// </summary>
+    internal CancellationToken CancellationToken;
 
     /// <summary>
     /// Method checks state from current execution
@@ -28,7 +34,7 @@ public abstract class ExecutionContext<TData> : IDisposable
     /// <exception cref="PendingRequestException">Generates exception when has pending request</exception>
     protected void CheckState()
     {
-        if (_context.RequestStatus == ContextRunEnum.Paused || 
+        if (_context.RequestStatus == ContextRunEnum.Paused ||
             _context.RequestStatus == ContextRunEnum.Disposed)
             throw new PendingRequestException();
     }
@@ -37,7 +43,7 @@ public abstract class ExecutionContext<TData> : IDisposable
     /// Execution
     /// </summary>
     /// <param name="data">Data to execute</param>
-    public abstract ExecutionResult Execute(TData data);
+    public abstract ExecutionResult Execute(TData data, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Dispose resources from instance

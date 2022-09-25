@@ -40,11 +40,6 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     private readonly Func<Task<IEnumerable<TData>>> _getData;
 
     /// <summary>
-    /// FIFO of searches to do
-    /// </summary>
-    private ConcurrentQueue<TData> _searchData = new();
-
-    /// <summary>
     /// Concurrent list of execution context
     /// </summary>
     private readonly BlockingCollection<TExecutionContext> _contexts = new();
@@ -63,6 +58,16 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// Called when exception occurs in a execution
     /// </summary>
     private readonly Func<Exception, TData, ExecutionResult>? _whenOccursException;
+
+    /// <summary>
+    /// Cancellation Token
+    /// </summary>
+    private CancellationTokenSource _cts = new();
+
+    /// <summary>
+    /// FIFO of searches to do
+    /// </summary>
+    private ConcurrentQueue<TData> _searchData = new();
 
     /// <summary>
     /// Thread in pausing
@@ -139,6 +144,14 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         StopAsync().GetAwaiter().GetResult();
     }
 
+    /// <summary>
+    /// Request stop and wait async
+    /// </summary>
+    /// <remarks>
+    ///     <para>Cancel running or pause with token <see cref="_cts"/></para>
+    /// </remarks>
+    /// <param name="cancellationToken">Cancellation token to cancel wait pause</param>
+    /// <returns>PauseModel ResultBase</returns>
     public async Task<ResultBase<PauseModel>> PauseAsync(bool pause = true, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -172,10 +185,23 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Running));
 
             if (pause)
-                return await SetPauseAsync(cancellationToken);
+            {
+                try
+                {
+                    _cts.Cancel();
+                    return await WaitPauseAsync(cancellationToken);
+                }
+                finally
+                {
+                    _cts.Dispose();
+                }
+            }
 
             if (!pause)
-                return await UnPauseAsync(cancellationToken);
+            {
+                _cts = new();
+                return await WaitUnPauseAsync(cancellationToken);
+            }
 
             else
                 return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Option not finded."));
@@ -222,6 +248,9 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                         {
                             if (IsFinished())
                             {
+                                if (!_cts.IsCancellationRequested)
+                                    _cts.Cancel();
+                                _cts.Dispose();
                                 _status.SetStatus(ModelStateEnum.Disposed);
                                 _whenAllWorksEnd?.Invoke(_endExec);
                             }
@@ -247,6 +276,14 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
     }
 
+    /// <summary>
+    /// Request stop and wait async
+    /// </summary>
+    /// <remarks>
+    ///     <para>Cancel wait with token <see cref="_cts"/></para>
+    /// </remarks>
+    /// <param name="cancellationToken">Cancellation token to cancel wait stop</param>
+    /// <returns>StopModel ResultBase</returns>
     public async Task<ResultBase<StopModel>> StopAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -274,11 +311,14 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
         try
         {
-            return await DisposeAsync(cancellationToken);
+            if (!_cts.IsCancellationRequested)
+                _cts.Cancel();
+            return await WaitDisposeAsync(cancellationToken);
         }
         finally
         {
             _disposing = false;
+            _cts.Dispose();
         }
     }
 
@@ -315,7 +355,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <remarks>
     ///     <para>Status set to Paused</para>
     /// </remarks>
-    private async Task<ResultBase<PauseModel>> SetPauseAsync(CancellationToken cancellationToken = default)
+    private async Task<ResultBase<PauseModel>> WaitPauseAsync(CancellationToken cancellationToken = default)
     {
         foreach (var contextInfo in _contexts.Select(context => context.Context))
         {
@@ -340,7 +380,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <remarks>
     ///     <para>Status set to running</para>
     /// </remarks>
-    private async Task<ResultBase<PauseModel>> UnPauseAsync(CancellationToken cancellationToken = default)
+    private async Task<ResultBase<PauseModel>> WaitUnPauseAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -364,7 +404,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// Dispose and set all of the execute context to disposed
     /// </summary>
     /// <returns></returns>
-    private async Task<ResultBase<StopModel>> DisposeAsync(CancellationToken token = default)
+    private async Task<ResultBase<StopModel>> WaitDisposeAsync(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
 
@@ -425,7 +465,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         try
         {
             executionResult =
-                executionContext.Execute(dataToSearch);
+                executionContext.Execute(dataToSearch, _cts.Token);
         }
         catch (PendingRequestException)
         {
