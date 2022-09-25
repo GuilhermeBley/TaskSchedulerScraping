@@ -467,7 +467,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             executionResult =
                 executionContext.Execute(dataToSearch, _cts.Token);
         }
-        catch (PendingRequestException)
+        catch (OperationCanceledException)
         {
             executionResult = ExecutionResult.RetrySame("Pending request");
         }
