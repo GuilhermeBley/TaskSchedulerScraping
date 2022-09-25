@@ -24,22 +24,6 @@ public abstract class ExecutionContext<TData> : IDisposable
     internal ContextRun Context => _context;
 
     /// <summary>
-    /// Cancellation token
-    /// </summary>
-    internal CancellationToken CancellationToken;
-
-    /// <summary>
-    /// Method checks state from current execution
-    /// </summary>
-    /// <exception cref="PendingRequestException">Generates exception when has pending request</exception>
-    protected void CheckState()
-    {
-        if (_context.RequestStatus == ContextRunEnum.Paused ||
-            _context.RequestStatus == ContextRunEnum.Disposed)
-            throw new PendingRequestException();
-    }
-
-    /// <summary>
     /// Execution
     /// </summary>
     /// <param name="data">Data to execute</param>
