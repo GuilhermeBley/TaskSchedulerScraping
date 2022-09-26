@@ -59,6 +59,11 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     private readonly Func<Exception, TData, ExecutionResult>? _whenOccursException;
 
     /// <summary>
+    /// Manual reset event
+    /// </summary>
+    private readonly ManualResetEvent _mre = new(true);
+
+    /// <summary>
     /// Cancellation Token
     /// </summary>
     private CancellationTokenSource _cts = new();
@@ -188,6 +193,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 try
                 {
                     _cts.Cancel();
+                    _mre.Reset();
                     return await WaitPauseAsync(cancellationToken);
                 }
                 finally
@@ -199,6 +205,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             if (!pause)
             {
                 _cts = new();
+                _mre.Set();
                 return await WaitUnPauseAsync(cancellationToken);
             }
 
@@ -216,19 +223,21 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         if (_running == true)
             return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "In process to start."));
 
+        if (_status.IsDisposed())
+        {
+            return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.Disposed, _countScraper, "Already disposed."));
+        }
+
+        if (_status.State != ModelStateEnum.NotRunning)
+        {
+            return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "Already started."));
+        }
+
         try
         {
             _running = true;
 
-            if (_status.IsDisposed())
-            {
-                return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.Disposed, _countScraper, "Already disposed."));
-            }
-
-            if (_status.State != ModelStateEnum.NotRunning)
-            {
-                return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "Already started."));
-            }
+            _mre.Reset();
 
             _searchData = new ConcurrentQueue<TData>(await _getData.Invoke());
 
@@ -237,6 +246,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 var thread =
                     new Thread(() =>
                     {
+                        _mre.WaitOne();
                         try
                         {
                             _endExec.Add(
@@ -270,6 +280,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         }
         finally
         {
+            _mre.Set();
             _running = false;
         }
 
@@ -433,17 +444,19 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     {
         var context = executionContext.Context ?? throw new ArgumentNullException(nameof(executionContext.Context));
 
-        if (context.RequestStatus == ContextRunEnum.Disposed)
+        if (context.RequestStatus == ContextRunEnum.Disposed &&
+            _cts.IsCancellationRequested)
         {
             context.SetCurrentStatusWithException(
                 new ObjectDisposedException(nameof(executionContext))
             );
             return;
         }
-        if (context.RequestStatus == ContextRunEnum.Paused)
+        if (context.RequestStatus == ContextRunEnum.Paused &&
+            _cts.IsCancellationRequested)
         {
             context.SetCurrentStatus(ContextRunEnum.Paused);
-            Thread.Sleep(250);
+            _mre.WaitOne();
             RunLoopSearch(executionContext, dataToSearch);
             return;
         }

@@ -420,9 +420,9 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
-        Assert.True(blockList.Any());
-
         var resultStop = model.StopAsync().GetAwaiter().GetResult();
+
+        Assert.True(blockList.Any());
 
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed && isWhenDataFinished);
     }
