@@ -257,11 +257,11 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                         {
                             if (IsFinished())
                             {
+                                _whenAllWorksEnd?.Invoke(_endExec);
+                                _status.SetStatus(ModelStateEnum.Disposed);
                                 if (!_cts.IsCancellationRequested)
                                     _cts.Cancel();
                                 _cts.Dispose();
-                                _status.SetStatus(ModelStateEnum.Disposed);
-                                _whenAllWorksEnd?.Invoke(_endExec);
                             }
                         }
 
