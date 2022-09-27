@@ -420,11 +420,11 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
-        var resultStop = model.StopAsync().GetAwaiter().GetResult();
+        await WaitFinishModel(model);
 
         Assert.True(blockList.Any());
 
-        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed && isWhenDataFinished);
+        Assert.True(model.State == ModelStateEnum.Disposed && isWhenDataFinished);
     }
     
     [Fact(Timeout = 1000)]
@@ -443,16 +443,34 @@ public class ModelScraperTest
                 whenDataFinished: (data) => { isSucessDataSearch = data.IsSucess; isWhenDataFinished = true; },
                 whenOccursException: (ex, data) => { return ExecutionResult.Ok(); }
             );
-
+        
         var resultRun = await model.Run();
 
         Assert.True(resultRun.IsSucess);
 
         Assert.True(!blockList.Any());
 
-        var resultStop = model.StopAsync().GetAwaiter().GetResult();
+        await WaitFinishModel(model);
 
-        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed && 
+        Assert.True(model.State == ModelStateEnum.Disposed && 
             isWhenDataFinished && isSucessDataSearch);
+    }
+
+    /// <summary>
+    /// Wait to finish the model
+    /// </summary>
+    /// <returns>async</returns>
+    /// <exception cref="OperationCanceledException"/>
+    public async Task WaitFinishModel(IModelScraper model, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        while (model.State != ModelStateEnum.Disposed)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Delay(250);
+        }
+
+        return;
     }
 }
