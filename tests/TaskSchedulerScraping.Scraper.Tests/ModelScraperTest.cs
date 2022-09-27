@@ -119,7 +119,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 3000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Oredered_ChecksOrderFromData()
     {
         BlockingCollection<int> blockList = new();
@@ -153,7 +153,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed && isFinished);
     }
 
-    [Fact(Timeout = 2000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Oredered_ChecksOrderFromDataWithException()
     {
         const int onError = 32;
@@ -184,19 +184,20 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 2000)]
+    [Fact(Timeout = 5000)]
     public async Task PauseModel_Pause_Pause()
     {
-        bool hasError = false;
+        bool isDataSearched = false;
         var monitor = new SimpleMonitor();
         var isFinished = false;
         IModelScraper model =
             new ModelScraper<EndlessExecution, SimpleData>
             (
                 1,
-                () => new EndlessExecution() { OnRepeat = (containsError) => { hasError = containsError; } },
+                () => new EndlessExecution(),
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1); },
-                whenAllWorksEnd: (finishList) => { isFinished = true; }
+                whenAllWorksEnd: (finishList) => { isFinished = true; },
+                whenDataFinished: (resultData) => { if (resultData.IsSucess) isDataSearched = true; }
             );
 
         var resultRun = await model.Run();
@@ -207,16 +208,18 @@ public class ModelScraperTest
 
         Assert.True(pause.IsSucess);
 
-        monitor.Wait(1000, () => model.PauseAsync(false).GetAwaiter().GetResult());
+        monitor.Wait(500, () => model.PauseAsync(false).GetAwaiter().GetResult());
 
         await WaitFinishModel(model);
 
+        await Task.Delay(100);
+
         Assert.True(isFinished);
-        Assert.True(hasError);
+        Assert.True(isDataSearched);
         Assert.True(model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 2000)]
+    [Fact(Timeout = 5000)]
     public async Task StopModel_Dispose_Stop()
     {
         var monitor = new SimpleMonitor();
@@ -240,12 +243,14 @@ public class ModelScraperTest
 
         var resultStop = await model.StopAsync(cancellationTokenSource.Token);
 
-        Assert.True(resultStop.IsSucess);
+        await Task.Delay(100);
 
-        Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed && isFinished);
+        Assert.True(resultStop.IsSucess);
+        Assert.True(isFinished);
+        Assert.True(model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 2000)]
+    [Fact(Timeout = 5000)]
     public async Task PauseModel_Pause_CancelPause()
     {
         IModelScraper model =
@@ -270,7 +275,7 @@ public class ModelScraperTest
             () => model.PauseAsync(true, cancellationToken: cancellationTokenSource.Token));
     }
 
-    [Fact(Timeout = 2000)]
+    [Fact(Timeout = 5000)]
     public async Task StopModel_Dispose_CancelStop()
     {
         IModelScraper model =
@@ -293,7 +298,7 @@ public class ModelScraperTest
             () => model.StopAsync(cancellationToken: cancellationTokenSource.Token));
     }
 
-    [Fact(Timeout = 1000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Exec_With0DataAnd1ThreadWithoutError()
     {
         BlockingCollection<DateTime> blockList = new();
@@ -323,7 +328,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 1000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Exec_With0DataAnd10ThreadWithoutError()
     {
         BlockingCollection<DateTime> blockList = new();
@@ -353,7 +358,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 1000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Exec_With0DataAnd100ThreadWithoutError()
     {
         BlockingCollection<DateTime> blockList = new();
@@ -379,7 +384,7 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 1000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Exec_WhenAllWorkFinished()
     {
         BlockingCollection<DateTime> blockList = new();
@@ -401,12 +406,14 @@ public class ModelScraperTest
 
         var resultStop = model.StopAsync().GetAwaiter().GetResult();
 
+        await Task.Delay(20);
+
         Assert.True(isWhenAllWorksFinished);
         Assert.True(model.State == ModelStateEnum.Disposed);
         Assert.True(resultStop.IsSucess);
     }
 
-    [Fact(Timeout = 1000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Exec_WhenDataFinished()
     {
         BlockingCollection<DateTime> blockList = new();
@@ -431,7 +438,7 @@ public class ModelScraperTest
         Assert.True(model.State == ModelStateEnum.Disposed && isWhenDataFinished);
     }
 
-    [Fact(Timeout = 1000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Exec_WhenOccursExceptionOk()
     {
         BlockingCollection<int> blockList = new();
@@ -459,7 +466,7 @@ public class ModelScraperTest
             isWhenDataFinished && isSucessDataSearch);
     }
 
-    [Fact(Timeout = 1000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Exec_WhenPauseDoesNotCollectData()
     {
         const int maxWaiting = 100;
@@ -510,7 +517,7 @@ public class ModelScraperTest
         Assert.True(model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 1000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Exec_WhenStopDoesNotCollectData()
     {
         const int maxWaiting = 100;
