@@ -61,7 +61,12 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <summary>
     /// Manual reset event
     /// </summary>
-    private readonly ManualResetEvent _mre = new(true);
+    private readonly ManualResetEvent _mrePause = new(true);
+
+    /// <summary>
+    /// Manual reset event
+    /// </summary>
+    private readonly ManualResetEvent _mreWaitProcessing = new(true);
 
     /// <summary>
     /// Cancellation Token
@@ -192,21 +197,48 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             {
                 try
                 {
+                    _mreWaitProcessing.Reset();
+
                     _cts.Cancel();
-                    _mre.Reset();
-                    return await WaitPauseAsync(cancellationToken);
+                    _mrePause.Reset();
+
+                    SetStateAllContexts(ContextRunEnum.Paused);
                 }
                 finally
                 {
-                    _cts.Dispose();
+                    _mreWaitProcessing.Set();
                 }
+
+                await WaitStateAllContexts(ModelStateEnum.Paused, cancellationToken);
+                
+                return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Paused));
             }
 
             if (!pause)
             {
-                _cts = new();
-                _mre.Set();
-                return await WaitUnPauseAsync(cancellationToken);
+                try
+                {
+                    _mreWaitProcessing.Reset();
+
+                    lock (_cts)
+                    {
+                        if (!_cts.IsCancellationRequested)
+                            _cts.Cancel();
+                        _cts.Dispose();
+                        _cts = new();
+                    }
+
+                    SetStateAllContexts(ContextRunEnum.Running);
+                }
+                finally
+                {
+                    _mreWaitProcessing.Set();
+                    _mrePause.Set();
+                }
+
+                await WaitStateAllContexts(ModelStateEnum.Running, cancellationToken);
+
+                return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Running));
             }
 
             else
@@ -237,7 +269,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         {
             _running = true;
 
-            _mre.Reset();
+            _mrePause.Reset();
 
             _searchData = new ConcurrentQueue<TData>(await _getData.Invoke());
 
@@ -246,7 +278,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 var thread =
                     new Thread(() =>
                     {
-                        _mre.WaitOne();
+                        _mrePause.WaitOne();
                         try
                         {
                             _endExec.Add(
@@ -257,8 +289,14 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                         {
                             if (IsFinished())
                             {
-                                _whenAllWorksEnd?.Invoke(_endExec);
                                 _status.SetStatus(ModelStateEnum.Disposed);
+
+                                try
+                                {
+                                    _whenAllWorksEnd?.Invoke(_endExec);
+                                }
+                                catch { }
+
                                 if (!_cts.IsCancellationRequested)
                                     _cts.Cancel();
                                 _cts.Dispose();
@@ -280,7 +318,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         }
         finally
         {
-            _mre.Set();
+            _mrePause.Set();
             _running = false;
         }
 
@@ -321,9 +359,23 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
         try
         {
-            if (!_cts.IsCancellationRequested)
-                _cts.Cancel();
-            return await WaitDisposeAsync(cancellationToken);
+            try
+            {
+                _mreWaitProcessing.Reset();
+
+                if (!_cts.IsCancellationRequested)
+                    _cts.Cancel();
+
+                SetStateAllContexts(ContextRunEnum.Disposed);
+            }
+            finally
+            {
+                _mreWaitProcessing.Set();
+            }
+
+            await WaitStateAllContexts(ModelStateEnum.Disposed, cancellationToken);
+
+            return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.Stoped));
         }
         finally
         {
@@ -360,90 +412,16 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     }
 
     /// <summary>
-    /// Pause and set all of the execute context to pause
-    /// </summary>
-    /// <remarks>
-    ///     <para>Status set to Paused</para>
-    /// </remarks>
-    private async Task<ResultBase<PauseModel>> WaitPauseAsync(CancellationToken cancellationToken = default)
-    {
-        foreach (var contextInfo in _contexts.Select(context => context.Context))
-        {
-            contextInfo.SetRequestStatus(ContextRunEnum.Paused);
-        }
-
-        while (!_contexts.All(context => context.Context.IsCurrentContextEqualsTheRequested() || context.Context.IsDisposed()))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            await Task.Delay(300);
-        }
-
-        _status.SetStatus(ModelStateEnum.Paused);
-
-        return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Paused));
-    }
-
-    /// <summary>
-    /// Unpause and set all of the execute context to running
-    /// </summary>
-    /// <remarks>
-    ///     <para>Status set to running</para>
-    /// </remarks>
-    private async Task<ResultBase<PauseModel>> WaitUnPauseAsync(CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        foreach (var contextInfo in _contexts.Select(context => context.Context))
-        {
-            contextInfo.SetRequestStatus(ContextRunEnum.Running);
-        }
-
-        while (!_contexts.All(context => context.Context.IsCurrentContextEqualsTheRequested() || context.Context.IsDisposed()))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            await Task.Delay(300);
-        }
-
-        _status.SetStatus(ModelStateEnum.Running);
-
-        return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Running));
-    }
-
-    /// <summary>
-    /// Dispose and set all of the execute context to disposed
-    /// </summary>
-    /// <returns></returns>
-    private async Task<ResultBase<StopModel>> WaitDisposeAsync(CancellationToken token = default)
-    {
-        token.ThrowIfCancellationRequested();
-
-        foreach (var contextInfo in _contexts.Select(context => context.Context))
-        {
-            if (!contextInfo.IsDisposed())
-                contextInfo.SetRequestStatus(ContextRunEnum.Disposed);
-        }
-
-        while (!_contexts.All(context => context.Context.IsCurrentContextEqualsTheRequested() || context.Context.IsDisposed()))
-        {
-            token.ThrowIfCancellationRequested();
-            await Task.Delay(300);
-        }
-
-        _status.SetStatus(ModelStateEnum.Disposed);
-
-        return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.Stoped));
-    }
-
-    /// <summary>
     /// each worker thread execute this method
     /// </summary>
     /// <param name="executionContext">Context execution</param>
     /// <exception cref="ArgumentNullException"><paramref name="executionContext"/></exception>
     private void RunLoopSearch(TExecutionContext executionContext, TData? dataToSearch = null)
     {
-        var context = executionContext.Context ?? throw new ArgumentNullException(nameof(executionContext.Context));
+        _mreWaitProcessing.WaitOne();
 
+        var context = executionContext.Context ?? throw new ArgumentNullException(nameof(executionContext.Context));
+        
         if (context.RequestStatus == ContextRunEnum.Disposed)
         {
             context.SetCurrentStatusWithException(
@@ -454,12 +432,21 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         if (context.RequestStatus == ContextRunEnum.Paused)
         {
             context.SetCurrentStatus(ContextRunEnum.Paused);
-            _mre.WaitOne();
+
+            if (_status.State != ModelStateEnum.Paused &&
+            _contexts.All(context => context.Context.CurrentStatus == ContextRunEnum.Paused))
+                _status.SetStatus(ModelStateEnum.Paused);
+
+            _mrePause.WaitOne();
             RunLoopSearch(executionContext, dataToSearch);
             return;
         }
 
         context.SetCurrentStatus(ContextRunEnum.Running);
+
+        if (_status.State != ModelStateEnum.Running &&
+            _contexts.All(context => context.Context.CurrentStatus == ContextRunEnum.Running))
+            _status.SetStatus(ModelStateEnum.Running);
 
         if (dataToSearch is null)
             _searchData.TryDequeue(out dataToSearch);
@@ -540,6 +527,37 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             return false;
 
         return true;
+    }
+
+    /// <summary>
+    /// Method checks if all running threads reach your requested state or disposed
+    /// </summary>
+    /// <param name="token">Token to cancel wait</param>
+    private async Task WaitStateAllContexts(ModelStateEnum state, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+
+        while (!_contexts.All(context => _status.State == state || _status.IsDisposed()))
+        {
+            token.ThrowIfCancellationRequested();
+            await Task.Delay(300);
+        }
+    }
+
+    /// <summary>
+    /// Sets all states running if state isn't disposed.
+    /// </summary>
+    /// <param name="allContextToRequest">context to set</param>
+    private void SetStateAllContexts(ContextRunEnum allContextToRequest)
+    {
+        if (_contexts is null)
+            return;
+
+        foreach (var contextInfo in _contexts.Select(context => context.Context))
+        {
+            if (!contextInfo.IsDisposed())
+                contextInfo.SetRequestStatus(allContextToRequest);
+        }
     }
 
     /// <summary>

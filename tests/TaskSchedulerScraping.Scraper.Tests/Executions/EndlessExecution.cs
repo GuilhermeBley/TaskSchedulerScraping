@@ -19,8 +19,6 @@ internal class EndlessExecution : ExecutionContext<SimpleData>
         {
             if (_hasError)
                 return ExecutionResult.Ok();
-
-            Thread.Sleep(50);
             
             try
             {

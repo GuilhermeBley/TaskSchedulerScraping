@@ -192,19 +192,19 @@ public class ModelScraperTest
         Assert.True(resultStop.IsSucess && model.State == ModelStateEnum.Disposed);
     }
 
-    [Fact(Timeout = 5000)]
+    [Fact(Timeout = Timeout.Infinite)]
     public async Task PauseModel_Pause_Pause()
     {
+        IEnumerable<Results.ResultBase<Exception?>>? finishedList = null;
         var monitor = new SimpleMonitor();
         var isFinishedData = false;
-        var isFinished = false;
         IModelScraper model =
             new ModelScraper<EndlessExecution, SimpleData>
             (
                 1,
                 () => new EndlessExecution(),
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1); },
-                whenAllWorksEnd: (finishList) => { isFinished = true; },
+                whenAllWorksEnd: (finishList) => { finishedList = finishList; },
                 whenDataFinished: (resultData) => {
                     _output.WriteLine($"Is data searched:{resultData.IsSucess}");
                     if (resultData.IsSucess) isFinishedData = true; }
@@ -214,15 +214,24 @@ public class ModelScraperTest
 
         Assert.True(resultRun.IsSucess);
 
+        monitor.Wait(150);
+
         var pause = await model.PauseAsync(true);
 
         Assert.True(pause.IsSucess);
 
-        monitor.Wait(100);
+        monitor.Wait(150);
+
+        Assert.Null(finishedList);
+
+        Assert.Equal(ModelStateEnum.Paused, model.State);
 
         var resultUnpause = model.PauseAsync(false).GetAwaiter().GetResult();
 
         _output.WriteLine($"State:{Enum.GetName(resultUnpause.Result.Status)}, Message:{resultUnpause.Result.Message}");
+
+        Assert.True(model.State == ModelStateEnum.Running || model.State == ModelStateEnum.Disposed);
+            
         Assert.True(resultUnpause.IsSucess);
 
         monitor.Wait(100);
@@ -231,7 +240,7 @@ public class ModelScraperTest
 
         monitor.Wait(200);
 
-        Assert.True(isFinished);
+        Assert.NotNull(finishedList);
         Assert.True(isFinishedData);
         Assert.True(model.State == ModelStateEnum.Disposed);
     }
@@ -537,6 +546,58 @@ public class ModelScraperTest
     }
 
     [Fact(Timeout = 5000)]
+    public async Task ExecuteModel_Exec_WhenPauseDoesCheckCollectData()
+    {
+        const int maxWaiting = 1000;
+        const int maxData = 100;
+
+        BlockingCollection<int> blockList = new();
+
+        var monitor = new SimpleMonitor();
+
+        IModelScraper model =
+            new ModelScraper<WaitingExecution, IntegerData>
+            (
+                maxData / 2,
+                () => new WaitingExecution(maxWaiting),
+                async () => { await Task.CompletedTask; return IntegerDataFactory.GetData(maxData); },
+                whenDataFinished: (data) =>
+                {
+                    if (data.IsSucess)
+                        blockList.Add(data.Result.Id);
+                }
+            );
+
+        var resultRun = await model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        monitor.Wait(maxWaiting / 2);
+
+        var resultPause = await model.PauseAsync();
+
+        Assert.True(resultPause.IsSucess);
+
+        monitor.Wait(maxWaiting);
+
+        Assert.Equal(maxData/2, blockList.Count);
+
+        monitor.Wait(maxWaiting);
+
+        Assert.Equal(maxData/2, blockList.Count);
+
+        resultPause = await model.PauseAsync(false);
+
+        Assert.True(resultPause.IsSucess, resultPause.Result.Message ?? "");
+
+        await WaitFinishModel(model);
+
+        Assert.Equal(maxData, blockList.Count);
+
+        Assert.True(model.State == ModelStateEnum.Disposed);
+    }
+
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Exec_WhenStopDoesNotCollectData()
     {
         const int maxWaiting = 100;
@@ -572,6 +633,46 @@ public class ModelScraperTest
         await WaitFinishModel(model);
 
         Assert.True(blockList.Count < maxData);
+
+        Assert.True(model.State == ModelStateEnum.Disposed);
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task ExecuteModel_Exec_WhenStopDoesCheckCollectData()
+    {
+        const int maxWaiting = 1000;
+        const int maxData = 100;
+
+        BlockingCollection<int> blockList = new();
+
+        var monitor = new SimpleMonitor();
+
+        IModelScraper model =
+            new ModelScraper<WaitingExecution, IntegerData>
+            (
+                maxData / 2,
+                () => new WaitingExecution(maxWaiting),
+                async () => { await Task.CompletedTask; return IntegerDataFactory.GetData(maxData); },
+                whenDataFinished: (data) =>
+                {
+                    if (data.IsSucess)
+                        blockList.Add(data.Result.Id);
+                }
+            );
+
+        var resultRun = await model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        monitor.Wait(maxWaiting / 2);
+
+        var resultStop = await model.StopAsync();
+
+        Assert.True(resultStop.IsSucess);
+
+        await WaitFinishModel(model);
+
+        Assert.Equal(maxData/2, blockList.Count);
 
         Assert.True(model.State == ModelStateEnum.Disposed);
     }
