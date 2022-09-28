@@ -7,7 +7,6 @@ internal class EndlessExecution : ExecutionContext<SimpleData>
 {
     public bool IsActiveError = true;
     public bool _hasError = false;
-    public Action<bool>? OnRepeat;
 
     public override void Dispose()
     {
@@ -18,9 +17,6 @@ internal class EndlessExecution : ExecutionContext<SimpleData>
     {
         while (true)
         {
-
-            OnRepeat?.Invoke(_hasError);
-
             if (_hasError)
                 return ExecutionResult.Ok();
 

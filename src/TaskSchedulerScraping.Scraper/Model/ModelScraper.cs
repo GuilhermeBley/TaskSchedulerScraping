@@ -444,16 +444,14 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     {
         var context = executionContext.Context ?? throw new ArgumentNullException(nameof(executionContext.Context));
 
-        if (context.RequestStatus == ContextRunEnum.Disposed &&
-            _cts.IsCancellationRequested)
+        if (context.RequestStatus == ContextRunEnum.Disposed)
         {
             context.SetCurrentStatusWithException(
                 new ObjectDisposedException(nameof(executionContext))
             );
             return;
         }
-        if (context.RequestStatus == ContextRunEnum.Paused &&
-            _cts.IsCancellationRequested)
+        if (context.RequestStatus == ContextRunEnum.Paused)
         {
             context.SetCurrentStatus(ContextRunEnum.Paused);
             _mre.WaitOne();
@@ -518,6 +516,14 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             _searchData.Enqueue(dataToSearch);
             _whenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
             context.SetCurrentStatusWithException(exception);
+            return;
+        }
+
+        if (_searchData.Any())
+        {
+            _searchData.Enqueue(dataToSearch);
+            _whenDataFinished?.Invoke(ResultBase<TData>.GetWithError(dataToSearch));
+            RunLoopSearch(executionContext, null);
             return;
         }
 

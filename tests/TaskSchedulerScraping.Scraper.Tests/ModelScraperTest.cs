@@ -2,11 +2,19 @@ using System.Collections.Concurrent;
 using TaskSchedulerScraping.Scraper.Model;
 using TaskSchedulerScraping.Scraper.Tests.Mocks;
 using TaskSchedulerScraping.Scraper.Tests.Monitors;
+using Xunit.Abstractions;
 
 namespace TaskSchedulerScraping.Scraper.Tests;
 
 public class ModelScraperTest
 {
+    private readonly ITestOutputHelper _output;
+
+    public ModelScraperTest(ITestOutputHelper output)
+    {
+        _output = output;
+    }
+
     [Fact(Timeout = 5000)]
     public async Task ExecuteModel_Exec_Add10ItemsToListWith1Thread()
     {
@@ -112,7 +120,7 @@ public class ModelScraperTest
 
         Assert.True(isFinished);
 
-        Assert.True(blockList.Distinct().Count() == 10);
+        Assert.True(blockList.Distinct().Count()>1);
 
         var resultStop = model.StopAsync().GetAwaiter().GetResult();
 
@@ -187,8 +195,8 @@ public class ModelScraperTest
     [Fact(Timeout = 5000)]
     public async Task PauseModel_Pause_Pause()
     {
-        bool isDataSearched = false;
         var monitor = new SimpleMonitor();
+        var isFinishedData = false;
         var isFinished = false;
         IModelScraper model =
             new ModelScraper<EndlessExecution, SimpleData>
@@ -197,7 +205,9 @@ public class ModelScraperTest
                 () => new EndlessExecution(),
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1); },
                 whenAllWorksEnd: (finishList) => { isFinished = true; },
-                whenDataFinished: (resultData) => { if (resultData.IsSucess) isDataSearched = true; }
+                whenDataFinished: (resultData) => {
+                    _output.WriteLine($"Is data searched:{resultData.IsSucess}");
+                    if (resultData.IsSucess) isFinishedData = true; }
             );
 
         var resultRun = await model.Run();
@@ -208,14 +218,21 @@ public class ModelScraperTest
 
         Assert.True(pause.IsSucess);
 
-        monitor.Wait(500, () => model.PauseAsync(false).GetAwaiter().GetResult());
+        monitor.Wait(100);
+
+        var resultUnpause = model.PauseAsync(false).GetAwaiter().GetResult();
+
+        _output.WriteLine($"State:{Enum.GetName(resultUnpause.Result.Status)}, Message:{resultUnpause.Result.Message}");
+        Assert.True(resultUnpause.IsSucess);
+
+        monitor.Wait(100);
 
         await WaitFinishModel(model);
 
-        await Task.Delay(100);
+        monitor.Wait(200);
 
         Assert.True(isFinished);
-        Assert.True(isDataSearched);
+        Assert.True(isFinishedData);
         Assert.True(model.State == ModelStateEnum.Disposed);
     }
 
@@ -510,9 +527,11 @@ public class ModelScraperTest
 
         resultPause = await model.PauseAsync(false);
 
+        Assert.True(resultPause.IsSucess, resultPause.Result.Message ?? "");
+
         await WaitFinishModel(model);
 
-        Assert.True(blockList.Count == maxData);
+        Assert.Equal(maxData, blockList.Count);
 
         Assert.True(model.State == ModelStateEnum.Disposed);
     }
