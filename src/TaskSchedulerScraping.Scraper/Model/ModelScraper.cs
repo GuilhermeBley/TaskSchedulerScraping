@@ -153,18 +153,9 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         StopAsync().GetAwaiter().GetResult();
     }
 
-    /// <summary>
-    /// Request stop and wait async
-    /// </summary>
-    /// <remarks>
-    ///     <para>Cancel running or pause with token <see cref="_cts"/></para>
-    /// </remarks>
-    /// <param name="cancellationToken">Cancellation token to cancel wait pause</param>
-    /// <returns>PauseModel ResultBase</returns>
+    /// <inheritdoc path="*"/>
     public async Task<ResultBase<PauseModel>> PauseAsync(bool pause = true, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
         if (_status.IsDisposed())
         {
             await Task.CompletedTask;
@@ -250,6 +241,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         }
     }
 
+    /// <inheritdoc path="*"/>
     public async Task<ResultBase<RunModel>> Run()
     {
         if (_running == true)
@@ -324,18 +316,9 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
 
     }
 
-    /// <summary>
-    /// Request stop and wait async
-    /// </summary>
-    /// <remarks>
-    ///     <para>Cancel wait with token <see cref="_cts"/></para>
-    /// </remarks>
-    /// <param name="cancellationToken">Cancellation token to cancel wait stop</param>
-    /// <returns>StopModel ResultBase</returns>
+    /// <inheritdoc path="*"/>
     public async Task<ResultBase<StopModel>> StopAsync(CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
         if (_status.IsDisposed())
         {
             await Task.CompletedTask;

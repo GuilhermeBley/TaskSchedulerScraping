@@ -24,17 +24,18 @@ public interface IModelScraper
     ModelStateEnum State { get; }
 
     /// <summary>
-    /// Requests pause async
+    /// Requests pause and wait async
     /// </summary>
     /// <remarks>
     ///     <param name="pause">True to pause, false to unpause</param>
     /// </remarks>
+    /// <param name="cancellationToken">Cancel waiting if cancellation is requested</param>
     /// <returns><see cref="ResultBase{PauseModel}"/></returns>
-    /// <exception cref="ObjectDisposedException"/>
+    /// <exception cref="OperationCanceledException"/>
     Task<ResultBase<PauseModel>> PauseAsync(bool pause = true, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Requests run scrapers
+    /// Request and run scrapers
     /// </summary>
     /// <remarks>
     ///     <para>This method is awaitable because the data to search is collected async</para>
@@ -43,9 +44,10 @@ public interface IModelScraper
     Task<ResultBase<RunModel>> Run();
 
     /// <summary>
-    /// Requests stop async
+    /// Requests stop and wait async
     /// </summary>
+    /// <param name="cancellationToken">Cancel waiting if cancellation is requested</param>
     /// <returns><see cref="ResultBase{StopModel}"/></returns>
-    /// <exception cref="ObjectDisposedException"/>
+    /// <exception cref="OperationCanceledException"/>
     Task<ResultBase<StopModel>> StopAsync(CancellationToken cancellationToken = default);
 }
