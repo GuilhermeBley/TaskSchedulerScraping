@@ -172,8 +172,17 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         if (_disposing)
             return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Disposing."));
 
-        if (_pausing)
+        if (_pausing && pause)
+        {
+            await WaitStateAllContexts(ModelStateEnum.Paused, cancellationToken);
             return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.InProcess));
+        }
+
+        if (_pausing && !pause)
+        {
+            await WaitStateAllContexts(ModelStateEnum.Running, cancellationToken);
+            return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.InProcess));
+        }
 
         _pausing = true;
         try
@@ -201,7 +210,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 }
 
                 await WaitStateAllContexts(ModelStateEnum.Paused, cancellationToken);
-                
+
                 return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Paused));
             }
 
@@ -244,6 +253,8 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     /// <inheritdoc path="*"/>
     public async Task<ResultBase<RunModel>> Run()
     {
+        _mreWaitProcessing.WaitOne();
+
         if (_running == true)
             return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "In process to start."));
 
@@ -261,7 +272,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         {
             _running = true;
 
-            _mrePause.Reset();
+            _mreWaitProcessing.Reset();
 
             _searchData = new ConcurrentQueue<TData>(await _getData.Invoke());
 
@@ -270,7 +281,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
                 var thread =
                     new Thread(() =>
                     {
-                        _mrePause.WaitOne();
+                        _mreWaitProcessing.WaitOne();
                         try
                         {
                             _endExec.Add(
@@ -310,7 +321,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         }
         finally
         {
-            _mrePause.Set();
+            _mreWaitProcessing.Set();
             _running = false;
         }
 
@@ -325,18 +336,13 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.Stoped, "Already disposed"));
         }
 
-        if (_status.State != ModelStateEnum.Running)
-            return ResultBase<StopModel>.GetWithError(
-                new StopModel(StopModelEnum.Failed, $"In State {Enum.GetName(typeof(ModelStateEnum), _status.State)} isn't allowed stop."));
-
-        if (_running)
-            return ResultBase<StopModel>.GetWithError(new StopModel(StopModelEnum.Failed, "Running in process."));
-
-        if (_pausing)
-            return ResultBase<StopModel>.GetWithError(new StopModel(StopModelEnum.Failed, "Pausing in process."));
-
         if (_disposing)
+        {
+            await WaitStateAllContexts(ModelStateEnum.Disposed, cancellationToken);
             return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.InProcess));
+        }
+
+        _mreWaitProcessing.WaitOne();
 
         _disposing = true;
 
@@ -345,6 +351,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
             try
             {
                 _mreWaitProcessing.Reset();
+                _mrePause.Set();
 
                 if (!_cts.IsCancellationRequested)
                     _cts.Cancel();
@@ -407,7 +414,7 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
         _mreWaitProcessing.WaitOne();
 
         var context = executionContext.Context ?? throw new ArgumentNullException(nameof(executionContext.Context));
-        
+
         if (context.RequestStatus == ContextRunEnum.Disposed)
         {
             context.SetCurrentStatusWithException(

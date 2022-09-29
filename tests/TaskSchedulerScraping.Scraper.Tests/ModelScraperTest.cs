@@ -677,6 +677,56 @@ public class ModelScraperTest
         Assert.True(model.State == ModelStateEnum.Disposed);
     }
 
+    [Fact(Timeout = 5000)]
+    public async Task ExecuteModel_Exec_DisposeWhenHavePaused()
+    {
+        const int maxWaiting = 1000;
+        const int maxData = 100;
+
+        BlockingCollection<int> blockList = new();
+
+        var monitor = new SimpleMonitor();
+
+        IModelScraper model =
+            new ModelScraper<WaitingExecution, IntegerData>
+            (
+                maxData / 2,
+                () => new WaitingExecution(maxWaiting),
+                async () => { await Task.CompletedTask; return IntegerDataFactory.GetData(maxData); },
+                whenDataFinished: (data) =>
+                {
+                    if (data.IsSucess)
+                        blockList.Add(data.Result.Id);
+                }
+            );
+
+        var resultRun = await model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        monitor.Wait(maxWaiting / 2);
+
+        var resultPause = await model.PauseAsync();
+
+        Assert.True(resultPause.IsSucess, resultPause.Result.Message ?? "");
+
+        monitor.Wait(maxWaiting);
+
+        Assert.Equal(maxData/2, blockList.Count);
+
+        monitor.Wait(maxWaiting);
+
+        Assert.Equal(maxData/2, blockList.Count);
+
+        var resultStop = await model.StopAsync();
+
+        Assert.True(resultStop.IsSucess, resultStop.Result.Message ?? "");
+
+        Assert.Equal(maxData/2, blockList.Count);
+
+        Assert.True(model.State == ModelStateEnum.Disposed);
+    }
+
     /// <summary>
     /// Wait to finish the model
     /// </summary>
