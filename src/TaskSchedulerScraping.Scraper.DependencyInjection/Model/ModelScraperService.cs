@@ -79,6 +79,18 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
 
             object? sharedObj = null;
 
+            try
+            {
+                sharedObj = Activator.CreateInstance(parameter.ParameterType);
+            }
+            catch { }
+
+            if (sharedObj != null)
+            {
+                sharedArgs.Add(sharedObj);
+                continue;
+            }
+
             sharedObj = serviceProvider.GetService(parameter.ParameterType);
 
             if (sharedObj != null)
@@ -86,6 +98,10 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
                 sharedArgs.Add(sharedObj);
                 continue;
             }
+
+            throw new ArgumentException(
+                $"Parameter of constructor '{nameof(TExecutionContext)}' didn't be found or create.", 
+                parameter.ParameterType.ToString());
 
         }
 
