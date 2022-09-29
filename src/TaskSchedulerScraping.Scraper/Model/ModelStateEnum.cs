@@ -8,7 +8,12 @@ public enum ModelStateEnum : sbyte
     /// <summary>
     /// Not running yet
     /// </summary>
-    NotRunning = 0,
+    NotRunning = -1,
+
+    /// <summary>
+    /// Not running yet, but in process to run
+    /// </summary>
+    WaitingRunning = 0,
 
     /// <summary>
     /// Running
@@ -16,12 +21,24 @@ public enum ModelStateEnum : sbyte
     Running = 1,
 
     /// <summary>
+    /// Waiting to pause
+    /// </summary>
+    WaitingPause = 2,
+
+    /// <summary>
     /// Paused
     /// </summary>
-    Paused = 2,
+    Paused = 3,
+
+    /// <summary>
+    /// Waiting Dispose
+    /// </summary>
+    WaitingDispose = 4,
 
     /// <summary>
     /// Disposed
     /// </summary>
-    Disposed = 3
+    Disposed = 5
+
+    
 }
