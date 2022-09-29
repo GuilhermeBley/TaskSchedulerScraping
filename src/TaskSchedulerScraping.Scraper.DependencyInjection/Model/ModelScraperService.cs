@@ -45,7 +45,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// Method make a function that returns a new instance of exection with our services
     /// </summary>
     /// <param name="serviceProvider">Services</param>
-    /// <returns>Function that returns new </returns>
+    /// <returns>Function that returns new <typeparamref name="TExecutionContext"/></returns>
     /// <exception cref="Exception"></exception>
     private static Func<TExecutionContext> GetContextWithServices(IServiceProvider serviceProvider)
     {
@@ -64,6 +64,10 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
         return functionExc;
     }
 
+    /// <summary>
+    /// Method get shared objects which the parameters is tagged with <see cref="ScraperObjSharedAttribute"/>
+    /// </summary>
+    /// <exception cref="ArgumentException"></exception>
     private static object[] GetShraredArgs(IServiceProvider serviceProvider)
     {
         var executionType = typeof(TExecutionContext);
