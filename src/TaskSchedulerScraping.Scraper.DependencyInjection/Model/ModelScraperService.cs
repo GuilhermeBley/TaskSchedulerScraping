@@ -4,6 +4,11 @@ using TaskSchedulerScraping.Scraper.Results;
 using TaskSchedulerScraping.Scraper.DependencyInjection.Attributes;
 
 namespace TaskSchedulerScraping.Scraper.DependencyInjection.Model;
+
+/// <summary>
+/// Model scaper which manages services to executions
+/// </summary>
+/// <inheritdoc path="*"/>
 public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecutionContext, TData>
     where TData : class
     where TExecutionContext : ExecutionContext<TData>
@@ -11,10 +16,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// <summary>
     /// Instance with service provider
     /// </summary>
-    /// <param name="countScraper"></param>
-    /// <param name="serviceProvider"></param>
-    /// <param name="getData"></param>
-    /// <param name="args"></param>
+    /// <param name="serviceProvider">Services</param>
     public ModelScraperService(
         int countScraper,
         IServiceProvider serviceProvider,
@@ -26,13 +28,8 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// <summary>
     /// Instance with service provider
     /// </summary>
-    /// <param name="countScraper"></param>
-    /// <param name="serviceProvider"></param>
-    /// <param name="getData"></param>
-    /// <param name="whenOccursException"></param>
-    /// <param name="whenDataFinished"></param>
-    /// <param name="whenAllWorksEnd"></param>
-    /// <param name="args">args to</param>
+    /// <inheritdoc path="*"/>
+    /// <param name="serviceProvider">Services</param>
     public ModelScraperService(
         int countScraper,
         IServiceProvider serviceProvider,
@@ -44,6 +41,12 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     {
     }
 
+    /// <summary>
+    /// Method make a function that returns a new instance of exection with our services
+    /// </summary>
+    /// <param name="serviceProvider">Services</param>
+    /// <returns>Function that returns new </returns>
+    /// <exception cref="Exception"></exception>
     private static Func<TExecutionContext> GetContextWithServices(IServiceProvider serviceProvider)
     {
         var executionType = typeof(TExecutionContext);
