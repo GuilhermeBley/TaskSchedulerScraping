@@ -9,7 +9,7 @@ namespace TaskSchedulerScraping.Scraper.Tests;
 public class ModelScraperTest
 {
     private readonly ITestOutputHelper _output;
-
+    
     public ModelScraperTest(ITestOutputHelper output)
     {
         _output = output;

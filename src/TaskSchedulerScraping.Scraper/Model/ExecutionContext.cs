@@ -10,17 +10,17 @@ public abstract class ExecutionContext<TData> : IDisposable
     where TData : class
 {
     /// <summary>
-    /// Thread which execute the class
-    /// </summary>
-    public int Id => Context.IdThread;
-
-    /// <summary>
     /// Context in execution
     /// </summary>
     private ContextRun _context { get; } = new();
 
     /// <inheritdoc cref="_context" path="*"/>
     internal ContextRun Context => _context;
+
+    /// <summary>
+    /// Thread which execute the class
+    /// </summary>
+    public int Id => Context.IdThread;
 
     /// <summary>
     /// Execution

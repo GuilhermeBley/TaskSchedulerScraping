@@ -377,6 +377,9 @@ public sealed class ModelScraper<TExecutionContext, TData> : IModelScraper, IDis
     {
         Exception? exceptionEnd = null;
         var executionContext = _getContext.Invoke();
+        if (executionContext.Id != Thread.CurrentThread.ManagedThreadId)
+            throw new ArgumentException($"Context doesn't executing in correct process. Check if ");
+
         try
         {
             _contexts.Add(executionContext);
