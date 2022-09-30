@@ -52,7 +52,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     {
         var executionType = typeof(TExecutionContext);
 
-        if (executionType.GetConstructors().Where(c => c.IsPublic).Count() <= 1)
+        if (executionType.GetConstructors().Where(c => c.IsPublic).Count() > 1)
             throw new Exception($"{nameof(TExecutionContext)} should be have only one or zero public constructors.");
 
         args = GetShraredArgs(serviceProvider, args).ToArray();

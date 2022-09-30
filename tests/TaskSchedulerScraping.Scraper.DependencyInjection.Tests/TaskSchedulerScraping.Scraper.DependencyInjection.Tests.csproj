@@ -29,4 +29,8 @@
     <ProjectReference Include="..\..\src\TaskSchedulerScraping.Scraper.DependencyInjection\TaskSchedulerScraping.Scraper.DependencyInjection.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="appsettings.Development.json" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+
 </Project>
