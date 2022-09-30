@@ -20,8 +20,8 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     public ModelScraperService(
         int countScraper,
         IServiceProvider serviceProvider,
-        Func<Task<IEnumerable<TData>>> getData
-        ) : base(countScraper, GetContextWithServices(serviceProvider), getData)
+        Func<Task<IEnumerable<TData>>> getData,
+        params object[] args) : base(countScraper, GetContextWithServices(serviceProvider, args), getData)
     {
     }
 
@@ -36,8 +36,9 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
         Func<Task<IEnumerable<TData>>> getData,
         Func<Exception, TData, ExecutionResult>? whenOccursException = null,
         Action<ResultBase<TData>>? whenDataFinished = null,
-        Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null
-        ) : base(countScraper, GetContextWithServices(serviceProvider), getData, whenOccursException, whenDataFinished, whenAllWorksEnd)
+        Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null,
+        params object[] args
+        ) : base(countScraper, GetContextWithServices(serviceProvider, args), getData, whenOccursException, whenDataFinished, whenAllWorksEnd)
     {
     }
 
@@ -47,14 +48,14 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// <param name="serviceProvider">Services</param>
     /// <returns>Function that returns new <typeparamref name="TExecutionContext"/></returns>
     /// <exception cref="Exception"></exception>
-    private static Func<TExecutionContext> GetContextWithServices(IServiceProvider serviceProvider)
+    private static Func<TExecutionContext> GetContextWithServices(IServiceProvider serviceProvider, params object[] args)
     {
         var executionType = typeof(TExecutionContext);
 
         if (executionType.GetConstructors().Where(c => c.IsPublic).Count() <= 1)
             throw new Exception($"{nameof(TExecutionContext)} should be have only one or zero public constructors.");
 
-        var args = GetShraredArgs(serviceProvider).ToArray();
+        args = GetShraredArgs(serviceProvider, args).ToArray();
 
         var functionExc = () =>
         {
@@ -68,7 +69,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// Method get shared objects which the parameters is tagged with <see cref="ScraperObjSharedAttribute"/>
     /// </summary>
     /// <exception cref="ArgumentException"></exception>
-    private static object[] GetShraredArgs(IServiceProvider serviceProvider)
+    private static object[] GetShraredArgs(IServiceProvider serviceProvider, params object[] args)
     {
         var executionType = typeof(TExecutionContext);
 
@@ -99,6 +100,14 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
             }
 
             sharedObj = serviceProvider.GetService(parameter.ParameterType);
+
+            if (sharedObj != null)
+            {
+                sharedArgs.Add(sharedObj);
+                continue;
+            }
+
+            sharedObj = args.FirstOrDefault(o => o.GetType().Equals(parameter.ParameterType));
 
             if (sharedObj != null)
             {
