@@ -87,11 +87,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
 
             object? sharedObj = null;
 
-            try
-            {
-                sharedObj = Activator.CreateInstance(parameter.ParameterType);
-            }
-            catch { }
+            sharedObj = args.FirstOrDefault(o => o.GetType().Equals(parameter.ParameterType));
 
             if (sharedObj != null)
             {
@@ -107,7 +103,11 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
                 continue;
             }
 
-            sharedObj = args.FirstOrDefault(o => o.GetType().Equals(parameter.ParameterType));
+            try
+            {
+                sharedObj = Activator.CreateInstance(parameter.ParameterType);
+            }
+            catch { }
 
             if (sharedObj != null)
             {

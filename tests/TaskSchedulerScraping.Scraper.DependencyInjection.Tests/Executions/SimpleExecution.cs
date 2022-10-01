@@ -1,16 +1,9 @@
 using TaskSchedulerScraping.Scraper.Model;
-using TaskSchedulerScraping.Scraper.Results.Context;
 
 namespace TaskSchedulerScraping.Scraper.DependencyInjection.Tests.Executions;
 
 internal class SimpleExecution : ExecutionContext<SimpleData>
 {
-    private List<DateTime> _execHours { get; } = new();
-    public IEnumerable<DateTime> ExecHours => _execHours;
-    public ContextRun Context { get; } = new ContextRun();
-
-    public Action<DateTime>? OnSearch;
-
     public override void Dispose()
     {
         
@@ -18,10 +11,7 @@ internal class SimpleExecution : ExecutionContext<SimpleData>
 
     public override ExecutionResult Execute(SimpleData data, CancellationToken cancellationToken = default)
     {
-        var time = DateTime.Now;
-        _execHours.Add(time);
-        OnSearch?.Invoke(time);
-
+        Thread.Sleep(10);
         return ExecutionResult.Ok();
     }
 }
