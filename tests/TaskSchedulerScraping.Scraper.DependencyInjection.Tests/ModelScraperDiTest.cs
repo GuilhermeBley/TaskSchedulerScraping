@@ -74,12 +74,62 @@ public class ModelScraperDiTest
         Assert.ThrowsAny<Exception>(()=>{
             model
                 = new ModelScraperService<SimpleExecutionWith2Controller, SimpleData>(
-                    1,
+                    100,
                     serviceProvider,
                     async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
                     whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); }
                 );
         });
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task ModelServices_DiWithObjAndService_Sucess()
+    {
+        var servicesBase 
+            = new ServicesTestBase((services) => {
+                services.AddScoped<ISimpleService, SimpleService>();
+            });
+        var serviceProvider = servicesBase.ServiceProvider;
+
+        IModelScraper? model = null;
+        
+        model
+            = new ModelScraperService<SimpleExecutionServiceAndObj, SimpleData>(
+                1,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); },
+                args : new Obj1()
+            );
+
+        await RunAndWaitAsync(model);
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task ModelServices_DiWithoutObjAndWithService_FailedRun()
+    {
+        var servicesBase
+            = new ServicesTestBase((services) =>
+            {
+                services.AddScoped<ISimpleService, SimpleService>();
+            });
+        var serviceProvider = servicesBase.ServiceProvider;
+
+        IModelScraper? model = null;
+
+
+        model
+            = new ModelScraperService<SimpleExecutionServiceAndObj, SimpleData>(
+                1,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); }
+            );
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => RunAndWaitAsync(model)
+        );
+
     }
 
     public static async Task WaitModelFinish(IModelScraper model, CancellationToken cancellationToken = default)
@@ -91,5 +141,25 @@ public class ModelScraperDiTest
             cancellationToken.ThrowIfCancellationRequested();
             await Task.Delay(400);
         }
+    }
+
+
+    /// <summary>
+    /// Runs model and expected sucess in execute
+    /// </summary>
+    /// <remarks>
+    ///     <para>Wait async with cancellation</para>
+    /// </remarks>
+    /// <param name="model">model to execute</param>
+    /// <param name="cancellationToken">token to cancel wait</param>
+    public static async Task RunAndWaitAsync(IModelScraper model, CancellationToken cancellationToken = default)
+    {
+        var result = await model.Run();
+
+        Assert.True(result.IsSucess, "Failed to run model.");
+
+        await WaitModelFinish(model, cancellationToken);
+
+        Assert.Equal(ModelStateEnum.Disposed, model.State);
     }
 }
