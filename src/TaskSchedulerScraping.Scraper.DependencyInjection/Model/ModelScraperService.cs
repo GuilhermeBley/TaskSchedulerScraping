@@ -37,8 +37,9 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
         Func<Exception, TData, ExecutionResult>? whenOccursException = null,
         Action<ResultBase<TData>>? whenDataFinished = null,
         Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null,
+        Action<IEnumerable<TData>>? whenDataWasCollected = null,
         params object[] args
-        ) : base(countScraper, GetContextWithServices(serviceProvider, args), getData, whenOccursException, whenDataFinished, whenAllWorksEnd)
+        ) : base(countScraper, GetContextWithServices(serviceProvider, args), getData, whenOccursException, whenDataFinished, whenAllWorksEnd, whenDataWasCollected)
     {
     }
 
