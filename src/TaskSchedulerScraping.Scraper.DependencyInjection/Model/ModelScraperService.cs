@@ -17,11 +17,12 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// Instance with service provider
     /// </summary>
     /// <param name="serviceProvider">Services</param>
+    /// <param name="args">Same obj to constructors of executions</param>
     public ModelScraperService(
         int countScraper,
         IServiceProvider serviceProvider,
         Func<Task<IEnumerable<TData>>> getData,
-        params object[] args) : base(countScraper, GetContextWithServices(serviceProvider, args), getData)
+        params object[] args) : base(countScraper, GetContextWithServices(serviceProvider, null, args), getData)
     {
     }
 
@@ -30,6 +31,8 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// </summary>
     /// <inheritdoc path="*"/>
     /// <param name="serviceProvider">Services</param>
+    /// <param name="args">Same obj to constructors of executions</param>
+    /// <param name="whenExecutionCreated">When execution was created, this action was invoked with new instance of <typeparamref name="TExecutionContext"/></param>
     public ModelScraperService(
         int countScraper,
         IServiceProvider serviceProvider,
@@ -38,8 +41,9 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
         Action<ResultBase<TData>>? whenDataFinished = null,
         Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null,
         Action<IEnumerable<TData>>? whenDataWasCollected = null,
+        Action<TExecutionContext>? whenExecutionCreated = null,
         params object[] args
-        ) : base(countScraper, GetContextWithServices(serviceProvider, args), getData, whenOccursException, whenDataFinished, whenAllWorksEnd, whenDataWasCollected)
+        ) : base(countScraper, GetContextWithServices(serviceProvider, whenExecutionCreated, args), getData, whenOccursException, whenDataFinished, whenAllWorksEnd, whenDataWasCollected)
     {
     }
 
@@ -49,7 +53,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// <param name="serviceProvider">Services</param>
     /// <returns>Function that returns new <typeparamref name="TExecutionContext"/></returns>
     /// <exception cref="Exception"></exception>
-    private static Func<TExecutionContext> GetContextWithServices(IServiceProvider serviceProvider, params object[] args)
+    private static Func<TExecutionContext> GetContextWithServices(IServiceProvider serviceProvider, Action<TExecutionContext>? whenExecutionCreated = null, params object[] args)
     {
         var executionType = typeof(TExecutionContext);
 
@@ -57,10 +61,12 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
             throw new Exception($"{nameof(TExecutionContext)} should be have only one or zero public constructors.");
 
         args = Enumerable.Concat(args ,GetShraredArgs(serviceProvider, args)).ToArray();
-
+        
         var functionExc = () =>
         {
-            return ActivatorUtilities.CreateInstance<TExecutionContext>(serviceProvider, args);
+            var exc = ActivatorUtilities.CreateInstance<TExecutionContext>(serviceProvider, args);
+            whenExecutionCreated?.Invoke(exc);
+            return exc;
         };
 
         return functionExc;

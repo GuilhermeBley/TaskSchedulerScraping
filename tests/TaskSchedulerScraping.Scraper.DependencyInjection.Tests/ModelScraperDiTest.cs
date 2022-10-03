@@ -119,7 +119,7 @@ public class ModelScraperDiTest
 
         IEnumerable<Results.ResultBase<Exception?>> excList = Enumerable.Empty<Results.ResultBase<Exception?>>();
         model
-            = new ModelScraperService<SimpleExecutionWithController, SimpleData>(
+            = new ModelScraperService<SimpleExecutionServiceAndObj, SimpleData>(
                 100,
                 serviceProvider,
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
@@ -187,7 +187,7 @@ public class ModelScraperDiTest
     }
 
     [Fact(Timeout = 5000)]
-    public async Task ModelServices_DiWithServiceInArgs_SucessArgs()
+    public async Task ModelServices_DiWithIServiceInArgs_SucessArgsPriority()
     {
         var servicesBase
             = new ServicesTestBase((services) =>
@@ -197,20 +197,55 @@ public class ModelScraperDiTest
         var serviceProvider = servicesBase.ServiceProvider;
 
         IModelScraper? model = null;
-
+        ISimpleService service = new SimpleService();
+        List<ISimpleService> servicesOnCreate = new();
         IEnumerable<Results.ResultBase<Exception?>> excList = Enumerable.Empty<Results.ResultBase<Exception?>>();
         model
-            = new ModelScraperService<SimpleExecutionServiceAndObj, SimpleData>(
+            = new ModelScraperService<SimpleExecutionWithController, SimpleData>(
                 100,
                 serviceProvider,
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
-                whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); },
-                whenAllWorksEnd: (list) => { excList = list; }
+                whenExecutionCreated: (context) => servicesOnCreate.Add(context.Service),
+                whenAllWorksEnd: (list) => { excList = list; },
+                args: service
             );
 
         await RunAndWaitAsync(model);
 
-        Assert.All(excList, result => Assert.IsType<InvalidOperationException>(result.Result));
+        Assert.All(excList, result => Assert.True(result.IsSucess));
+
+        Assert.All(servicesOnCreate, result => Assert.Equal(service, result));
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task ModelServices_DiWithServiceInArgs_SucessArgsPriority()
+    {
+        var servicesBase
+            = new ServicesTestBase((services) =>
+            {
+                services.AddScoped<ISimpleService, SimpleService>();
+            });
+        var serviceProvider = servicesBase.ServiceProvider;
+
+        IModelScraper? model = null;
+        SimpleService service = new SimpleService();
+        List<ISimpleService> servicesOnCreate = new();
+        IEnumerable<Results.ResultBase<Exception?>> excList = Enumerable.Empty<Results.ResultBase<Exception?>>();
+        model
+            = new ModelScraperService<SimpleExecutionWithController, SimpleData>(
+                100,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenExecutionCreated: (context) => servicesOnCreate.Add(context.Service),
+                whenAllWorksEnd: (list) => { excList = list; },
+                args: service
+            );
+
+        await RunAndWaitAsync(model);
+
+        Assert.All(excList, result => Assert.True(result.IsSucess));
+
+        Assert.All(servicesOnCreate, result => Assert.Equal(service, result));
     }
 
     public static async Task WaitModelFinish(IModelScraper model, CancellationToken cancellationToken = default)
