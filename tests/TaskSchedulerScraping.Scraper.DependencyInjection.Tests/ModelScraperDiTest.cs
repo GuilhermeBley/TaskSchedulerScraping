@@ -4,11 +4,16 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace TaskSchedulerScraping.Scraper.DependencyInjection.Tests;
 
+//
+// Tests sintaxe: MethodName_ExpectedBehavior_StateUnderTest
+// Example: isAdult_AgeLessThan18_False
+//
+
 
 public class ModelScraperDiTest
 {
     [Fact(Timeout = 5000)]
-    public async Task ExecuteModelDi_Services_TryExecutionWithOutConstructor()
+    public async Task ModelServices_InstanceAndRunWithoutServices_Sucess()
     {
         var servicesBase 
             = new ServicesTestBase();
@@ -30,7 +35,7 @@ public class ModelScraperDiTest
 
 
     [Fact(Timeout = 5000)]
-    public async Task ExecuteModelDi_Services_TryExecutionWith100ThreadsWith1Constructor()
+    public async Task ModelServices_TryExecutionWith100ThreadsWith1ConstructorInExc_Sucess()
     {
         var servicesBase 
             = new ServicesTestBase((services) => {
@@ -56,7 +61,7 @@ public class ModelScraperDiTest
     }
 
     [Fact(Timeout = 5000)]
-    public void ExecuteModelDi_Services_TryExecutionWith2Constructor()
+    public void ModelServices_TryExecutionWith100ThreadsWith2ConstructorInExc_Failed()
     {
         var servicesBase 
             = new ServicesTestBase((services) => {
