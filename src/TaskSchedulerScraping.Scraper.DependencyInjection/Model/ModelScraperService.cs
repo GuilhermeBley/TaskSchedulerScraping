@@ -55,7 +55,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
         if (executionType.GetConstructors().Where(c => c.IsPublic).Count() > 1)
             throw new Exception($"{nameof(TExecutionContext)} should be have only one or zero public constructors.");
 
-        args = GetShraredArgs(serviceProvider, args).ToArray();
+        args = Enumerable.Concat(args ,GetShraredArgs(serviceProvider, args)).ToArray();
 
         var functionExc = () =>
         {
@@ -69,7 +69,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// Method get shared objects which the parameters is tagged with <see cref="ScraperObjSharedAttribute"/>
     /// </summary>
     /// <exception cref="ArgumentException"></exception>
-    private static object[] GetShraredArgs(IServiceProvider serviceProvider, params object[] args)
+    private static IEnumerable<object> GetShraredArgs(IServiceProvider serviceProvider, params object[] args)
     {
         var executionType = typeof(TExecutionContext);
 
@@ -103,24 +103,12 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
                 continue;
             }
 
-            try
-            {
-                sharedObj = Activator.CreateInstance(parameter.ParameterType);
-            }
-            catch { }
-
-            if (sharedObj != null)
-            {
-                sharedArgs.Add(sharedObj);
-                continue;
-            }
-
             throw new ArgumentException(
                 $"Parameter of constructor '{nameof(TExecutionContext)}' didn't be found or create.", 
                 parameter.ParameterType.ToString());
 
         }
 
-        return sharedArgs.ToArray();
+        return sharedArgs;
     }
 }

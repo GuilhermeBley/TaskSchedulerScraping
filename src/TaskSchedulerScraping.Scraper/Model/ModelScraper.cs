@@ -376,13 +376,21 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     /// <summary>
     /// Only one Thread should be acess this method
     /// </summary>
-    /// <remarks>
-    ///     <para></para>
-    /// </remarks>
     private ResultBase<Exception?> RunExecute()
     {
         Exception? exceptionEnd = null;
-        var executionContext = _getContext.Invoke();
+        TExecutionContext executionContext;
+        try
+        {
+            executionContext = _getContext.Invoke();
+        }
+        catch (Exception e)
+        {
+            return ResultBase<Exception?>.GetWithError(
+                    new InvalidOperationException($"Failed to create {nameof(TExecutionContext)}.", e)
+                );
+        }
+        
         if (executionContext.Id != Thread.CurrentThread.ManagedThreadId)
             throw new ArgumentException($"Context doesn't executing in correct process. Check if ");
 

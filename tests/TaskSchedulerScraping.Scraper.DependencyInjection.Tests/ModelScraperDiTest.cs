@@ -106,7 +106,7 @@ public class ModelScraperDiTest
     }
 
     [Fact(Timeout = 5000)]
-    public async Task ModelServices_DiWithoutObjAndWithService_FailedRun()
+    public async Task ModelServices_DiWithoutObjAndWithService_FailedRunExpectInvalidOperation()
     {
         var servicesBase
             = new ServicesTestBase((services) =>
@@ -117,19 +117,19 @@ public class ModelScraperDiTest
 
         IModelScraper? model = null;
 
-
+        IEnumerable<Results.ResultBase<Exception?>> excList = Enumerable.Empty<Results.ResultBase<Exception?>>();
         model
             = new ModelScraperService<SimpleExecutionServiceAndObj, SimpleData>(
-                1,
+                100,
                 serviceProvider,
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
-                whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); }
+                whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); },
+                whenAllWorksEnd: (list) => { excList = list; }
             );
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => RunAndWaitAsync(model)
-        );
+        await RunAndWaitAsync(model);
 
+        Assert.All(excList, result => Assert.False(result.IsSucess));
     }
 
     public static async Task WaitModelFinish(IModelScraper model, CancellationToken cancellationToken = default)
