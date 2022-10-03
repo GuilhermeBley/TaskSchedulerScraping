@@ -7,7 +7,7 @@ namespace TaskSchedulerScraping.Scraper.DependencyInjection.Tests;
 
 public class ModelScraperDiTest
 {
-    [Fact(DisplayName = "Simple execution without services", Timeout = 5000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModelDi_Services_TryExecutionWithOutConstructor()
     {
         var servicesBase 
@@ -29,7 +29,7 @@ public class ModelScraperDiTest
     }
 
 
-    [Fact(DisplayName = "Simple execution with services in 100 threads.", Timeout = 5000)]
+    [Fact(Timeout = 5000)]
     public async Task ExecuteModelDi_Services_TryExecutionWith100ThreadsWith1Constructor()
     {
         var servicesBase 
@@ -55,7 +55,7 @@ public class ModelScraperDiTest
         Assert.Equal(ModelStateEnum.Disposed, model.State);
     }
 
-    [Fact(DisplayName = "Execution with two constructors, this is not allowed, expected throw exception", Timeout = 5000)]
+    [Fact(Timeout = 5000)]
     public void ExecuteModelDi_Services_TryExecutionWith2Constructor()
     {
         var servicesBase 
