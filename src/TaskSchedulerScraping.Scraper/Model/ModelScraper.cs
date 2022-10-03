@@ -59,6 +59,11 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     private readonly Func<Exception, TData, ExecutionResult>? _whenOccursException;
 
     /// <summary>
+    /// Called when all data was collected to run.
+    /// </summary>
+    private readonly Action<IEnumerable<TData>>? _whenDataWasCollected;
+
+    /// <summary>
     /// Manual reset event
     /// </summary>
     private readonly ManualResetEvent _mrePause = new(true);
@@ -137,12 +142,14 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
         Func<Task<IEnumerable<TData>>> getData,
         Func<Exception, TData, ExecutionResult>? whenOccursException = null,
         Action<ResultBase<TData>>? whenDataFinished = null,
-        Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null)
+        Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null,
+        Action<IEnumerable<TData>>? whenDataWasCollected = null)
         : this(countScraper, getContext, getData)
     {
         _whenOccursException = whenOccursException;
         _whenDataFinished = whenDataFinished;
         _whenAllWorksEnd = whenAllWorksEnd;
+        _whenDataWasCollected = whenDataWasCollected;
     }
 
     /// <summary>
@@ -270,7 +277,11 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
 
             _status.SetStatus(ModelStateEnum.WaitingRunning);
 
-            _searchData = new ConcurrentQueue<TData>(await _getData.Invoke());
+            var data = await _getData.Invoke();
+
+            _searchData = new ConcurrentQueue<TData>(data);
+
+            _whenDataWasCollected?.Invoke(data);
 
             for (int indexScraper = 0; indexScraper < _countScraper; indexScraper++)
             {

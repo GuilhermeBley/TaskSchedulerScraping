@@ -893,6 +893,31 @@ public class ModelScraperTest
         Assert.Equal(ModelStateEnum.Disposed, model.State);
     }
 
+    [Fact(Timeout = 5000)]
+    public async Task ExecuteModel_CollectSearchList_SucessSameElements()
+    {
+        IEnumerable<IntegerData> dataToSearch = IntegerDataFactory.GetData(100);
+        IEnumerable<IntegerData> dataToCheck = Enumerable.Empty<IntegerData>();
+        IModelScraper model =
+            new ModelScraper<IntegerExecution, IntegerData>
+            (
+                1,
+                () => new IntegerExecution(),
+                async () => { await Task.CompletedTask; return dataToSearch; },
+                whenDataWasCollected: (searchListCollected) => { dataToCheck = searchListCollected; }
+            );
+
+        var resultRun = await model.Run();
+
+        Assert.True(resultRun.IsSucess);
+
+        Assert.Equal(dataToSearch, dataToCheck);
+
+        await WaitFinishModel(model);
+
+        Assert.Equal(ModelStateEnum.Disposed, ModelStateEnum.Disposed);
+    }
+
     /// <summary>
     /// Wait to finish the model
     /// </summary>
