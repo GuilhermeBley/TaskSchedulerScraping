@@ -8,6 +8,9 @@ namespace TaskSchedulerScraping.Scraper.DependencyInjection.Model;
 /// <summary>
 /// Model scaper which manages services to executions
 /// </summary>
+/// <remarks>
+///     <para>Class creates a new scope of service providier for each execution.</para>
+/// </remarks>
 /// <inheritdoc path="*"/>
 public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecutionContext, TData>
     where TData : class
@@ -60,11 +63,12 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
         if (executionType.GetConstructors().Where(c => c.IsPublic).Count() > 1)
             throw new Exception($"{nameof(TExecutionContext)} should be have only one or zero public constructors.");
 
-        args = Enumerable.Concat(args ,GetShraredArgs(serviceProvider, args)).ToArray();
+        args = Enumerable.Concat(args ,GetShraredArgs(serviceProvider.CreateScope(), args)).ToArray();
         
         var functionExc = () =>
         {
-            var exc = ActivatorUtilities.CreateInstance<TExecutionContext>(serviceProvider, args);
+            IServiceScope scope = serviceProvider.CreateScope();
+            var exc = ActivatorUtilities.CreateInstance<TExecutionContext>(scope.ServiceProvider, args);
             whenExecutionCreated?.Invoke(exc);
             return exc;
         };
@@ -76,7 +80,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// Method get shared objects which the parameters is tagged with <see cref="SharedServiceAttribute"/>
     /// </summary>
     /// <exception cref="ArgumentException"></exception>
-    private static IEnumerable<object> GetShraredArgs(IServiceProvider serviceProvider, params object[] args)
+    private static IEnumerable<object> GetShraredArgs(IServiceScope scope, params object[] args)
     {
         var executionType = typeof(TExecutionContext);
 
@@ -98,8 +102,8 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
             {
                 continue;
             }
-
-            sharedObj = serviceProvider.GetService(parameter.ParameterType);
+            
+            sharedObj = scope.ServiceProvider.GetServices(parameter.ParameterType).FirstOrDefault();
 
             if (sharedObj != null)
             {

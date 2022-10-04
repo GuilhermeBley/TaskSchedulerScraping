@@ -332,6 +332,10 @@ public class ModelScraperDiTest
 
         Assert.All(servicesOnCreate, result 
             => Assert.Equal(result.SimpleService, result.LinkedWithOther.SimpleService));
+
+        var firstService = servicesOnCreate.First().SimpleService;
+
+        Assert.NotEqual(firstService, servicesOnCreate.Last().SimpleService);
     }
 
     [Fact(Timeout = 5000)]
@@ -369,6 +373,155 @@ public class ModelScraperDiTest
 
         Assert.All(servicesOnCreate, result 
             => Assert.Equal(simpleServiceSingledon, result.LinkedWithOther.SimpleService));
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task ShareService_DiSameServiceWithTransient_Sucess()
+    {
+        var servicesBase
+            = new ServicesTestBase((services) =>
+            {
+                services.AddTransient<ISimpleService, SimpleService>();
+            });
+        var serviceProvider = servicesBase.ServiceProvider;
+
+        List<ISimpleService> servicesInExecutionsModel1 = new();
+        IEnumerable<Results.ResultBase<Exception?>> excList1 = Enumerable.Empty<Results.ResultBase<Exception?>>();
+        var model1
+            = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
+                100,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenExecutionCreated: (context) => servicesInExecutionsModel1.Add(context.SharedService),
+                whenAllWorksEnd: (list) => { excList1 = list; }
+            );
+
+        await RunAndWaitAsync(model1);
+
+        Assert.All(excList1, result => Assert.True(result.IsSucess));
+
+        var serviceModel1 = servicesInExecutionsModel1.FirstOrDefault() 
+            ?? throw new ArgumentNullException(nameof(servicesInExecutionsModel1));
+
+        Assert.All(servicesInExecutionsModel1, result 
+            => Assert.Equal(serviceModel1, result));
+            
+        List<ISimpleService> servicesInExecutionsModel2 = new();
+        IEnumerable<Results.ResultBase<Exception?>> excList2 = Enumerable.Empty<Results.ResultBase<Exception?>>();
+        var model2
+            = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
+                100,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenExecutionCreated: (context) => servicesInExecutionsModel2.Add(context.SharedService),
+                whenAllWorksEnd: (list) => { excList1 = list; }
+            );
+
+        await RunAndWaitAsync(model2);
+
+        Assert.All(excList2, result => Assert.True(result.IsSucess));
+
+        Assert.All(servicesInExecutionsModel2, result 
+            => Assert.NotEqual(serviceModel1, result));
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task ShareService_DiSameServiceWithScooped_Sucess()
+    {
+        var servicesBase
+            = new ServicesTestBase((services) =>
+            {
+                services.AddScoped<ISimpleService, SimpleService>();
+            });
+        var serviceProvider = servicesBase.ServiceProvider;
+
+        List<ISimpleService> servicesInExecutionsModel1 = new();
+        IEnumerable<Results.ResultBase<Exception?>> excList1 = Enumerable.Empty<Results.ResultBase<Exception?>>();
+        var model1
+            = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
+                100,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenExecutionCreated: (context) => servicesInExecutionsModel1.Add(context.SharedService),
+                whenAllWorksEnd: (list) => { excList1 = list; }
+            );
+
+        await RunAndWaitAsync(model1);
+
+        Assert.All(excList1, result => Assert.True(result.IsSucess));
+
+        var serviceModel1 = servicesInExecutionsModel1.FirstOrDefault() 
+            ?? throw new ArgumentNullException(nameof(servicesInExecutionsModel1));
+
+        Assert.All(servicesInExecutionsModel1, result 
+            => Assert.Equal(serviceModel1, result));
+            
+        List<ISimpleService> servicesInExecutionsModel2 = new();
+        IEnumerable<Results.ResultBase<Exception?>> excList2 = Enumerable.Empty<Results.ResultBase<Exception?>>();
+        var model2
+            = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
+                100,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenExecutionCreated: (context) => servicesInExecutionsModel2.Add(context.SharedService),
+                whenAllWorksEnd: (list) => { excList1 = list; }
+            );
+
+        await RunAndWaitAsync(model2);
+
+        Assert.All(excList2, result => Assert.True(result.IsSucess));
+
+        Assert.All(servicesInExecutionsModel2, result 
+            => Assert.NotEqual(serviceModel1, result));
+    }
+    
+    [Fact(Timeout = 5000)]
+    public async Task ShareService_DiSameServiceWithSingleton_Sucess()
+    {
+        var servicesBase
+            = new ServicesTestBase((services) =>
+            {
+                services.AddSingleton<ISimpleService, SimpleService>();
+            });
+        var serviceProvider = servicesBase.ServiceProvider;
+
+        var singledonService = serviceProvider.GetRequiredService<ISimpleService>();
+
+        List<ISimpleService> servicesInExecutionsModel1 = new();
+        IEnumerable<Results.ResultBase<Exception?>> excList1 = Enumerable.Empty<Results.ResultBase<Exception?>>();
+        var model1
+            = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
+                100,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenExecutionCreated: (context) => servicesInExecutionsModel1.Add(context.SharedService),
+                whenAllWorksEnd: (list) => { excList1 = list; }
+            );
+
+        await RunAndWaitAsync(model1);
+
+        Assert.All(excList1, result => Assert.True(result.IsSucess));
+
+        Assert.All(servicesInExecutionsModel1, result 
+            => Assert.Equal(singledonService, result));
+            
+        List<ISimpleService> servicesInExecutionsModel2 = new();
+        IEnumerable<Results.ResultBase<Exception?>> excList2 = Enumerable.Empty<Results.ResultBase<Exception?>>();
+        var model2
+            = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
+                100,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenExecutionCreated: (context) => servicesInExecutionsModel2.Add(context.SharedService),
+                whenAllWorksEnd: (list) => { excList1 = list; }
+            );
+
+        await RunAndWaitAsync(model2);
+
+        Assert.All(excList2, result => Assert.True(result.IsSucess));
+
+        Assert.All(servicesInExecutionsModel2, result 
+            => Assert.Equal(singledonService, result));
     }
 
     public static async Task WaitModelFinish(IModelScraper model, CancellationToken cancellationToken = default)
