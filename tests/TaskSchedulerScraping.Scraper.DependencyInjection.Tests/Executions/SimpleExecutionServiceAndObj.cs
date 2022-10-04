@@ -1,5 +1,3 @@
-using TaskSchedulerScraping.Scraper.DependencyInjection.Attributes;
-
 namespace TaskSchedulerScraping.Scraper.DependencyInjection.Tests.Executions;
 
 internal class SimpleExecutionServiceAndObj : SimpleExecution

@@ -3,7 +3,7 @@ using TaskSchedulerScraping.Scraper.Results.Context;
 
 namespace TaskSchedulerScraping.Scraper.Tests.Executions;
 
-internal class ThrowExcIntegerExecution : ExecutionContext<IntegerData>
+internal class ThrowExcIntegerExecution : Quest<IntegerData>
 {
     private int _throwOnNumber { get; }
     private bool _hasThrow = true;
@@ -20,7 +20,7 @@ internal class ThrowExcIntegerExecution : ExecutionContext<IntegerData>
 
     }
 
-    public override ExecutionResult Execute(IntegerData data, CancellationToken cancellationToken = default)
+    public override QuestResult Execute(IntegerData data, CancellationToken cancellationToken = default)
     {
         if (_hasThrow && _throwOnNumber == data.Id)
         {
@@ -31,6 +31,6 @@ internal class ThrowExcIntegerExecution : ExecutionContext<IntegerData>
 
         OnSearch?.Invoke(data);
         
-        return ExecutionResult.Ok();
+        return QuestResult.Ok();
     }
 }

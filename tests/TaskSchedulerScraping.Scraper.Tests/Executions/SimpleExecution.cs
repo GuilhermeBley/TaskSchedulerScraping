@@ -3,7 +3,7 @@ using TaskSchedulerScraping.Scraper.Results.Context;
 
 namespace TaskSchedulerScraping.Scraper.Tests.Executions;
 
-internal class SimpleExecution : ExecutionContext<SimpleData>
+internal class SimpleExecution : Quest<SimpleData>
 {
     private List<DateTime> _execHours { get; } = new();
     public IEnumerable<DateTime> ExecHours => _execHours;
@@ -16,12 +16,12 @@ internal class SimpleExecution : ExecutionContext<SimpleData>
         
     }
 
-    public override ExecutionResult Execute(SimpleData data, CancellationToken cancellationToken = default)
+    public override QuestResult Execute(SimpleData data, CancellationToken cancellationToken = default)
     {
         var time = DateTime.Now;
         _execHours.Add(time);
         OnSearch?.Invoke(time);
 
-        return ExecutionResult.Ok();
+        return QuestResult.Ok();
     }
 }

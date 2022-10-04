@@ -3,7 +3,7 @@ namespace TaskSchedulerScraping.Scraper.Model;
 /// <summary>
 /// Execution result
 /// </summary>
-public class ExecutionResult
+public class QuestResult
 {
     /// <summary>
     /// Action for the next execution data
@@ -22,11 +22,11 @@ public class ExecutionResult
     public object Message => _message;
 
     /// <summary>
-    /// Instances of <see cref="ExecutionResult"/>
+    /// Instances of <see cref="QuestResult"/>
     /// </summary>
     /// <param name="enum">State</param>
     /// <param name="message">Optional message</param>
-    internal ExecutionResult(ExecutionResultEnum @enum, object? message = null)
+    internal QuestResult(ExecutionResultEnum @enum, object? message = null)
     {
         _actionToNextData = @enum;
         if (message is not null)
@@ -34,43 +34,43 @@ public class ExecutionResult
     }
 
     /// <summary>
-    /// <see cref="ExecutionResult"/> with state Ok/Next
+    /// <see cref="QuestResult"/> with state Ok/Next
     /// </summary>
     /// <param name="message">Optional message</param>
-    /// <returns>new instace of <see cref="ExecutionResult"/></returns>
-    public static ExecutionResult Ok(object? message = null)
+    /// <returns>new instace of <see cref="QuestResult"/></returns>
+    public static QuestResult Ok(object? message = null)
     {
-        return new ExecutionResult(ExecutionResultEnum.Next, message);
+        return new QuestResult(ExecutionResultEnum.Next, message);
     }
 
     /// <summary>
-    /// <see cref="ExecutionResult"/> with state Retry Same
+    /// <see cref="QuestResult"/> with state Retry Same
     /// </summary>
     /// <param name="message">Optional message</param>
-    /// <returns>new instace of <see cref="ExecutionResult"/></returns>
-    public static ExecutionResult RetrySame(object? message = null)
+    /// <returns>new instace of <see cref="QuestResult"/></returns>
+    public static QuestResult RetrySame(object? message = null)
     {
-        return new ExecutionResult(ExecutionResultEnum.RetrySame, message);
+        return new QuestResult(ExecutionResultEnum.RetrySame, message);
     }
 
     /// <summary>
-    /// <see cref="ExecutionResult"/> with state Retry Other
+    /// <see cref="QuestResult"/> with state Retry Other
     /// </summary>
     /// <param name="message">Optional message</param>
-    /// <returns>new instace of <see cref="ExecutionResult"/></returns>
-    public static ExecutionResult RetryOther(object? message = null)
+    /// <returns>new instace of <see cref="QuestResult"/></returns>
+    public static QuestResult RetryOther(object? message = null)
     {
-        return new ExecutionResult(ExecutionResultEnum.RetryOther, message);
+        return new QuestResult(ExecutionResultEnum.RetryOther, message);
     }
 
     /// <summary>
-    /// <see cref="ExecutionResult"/> with state Throw Exception
+    /// <see cref="QuestResult"/> with state Throw Exception
     /// </summary>
     /// <param name="message">Optional exception</param>
-    /// <returns>new instace of <see cref="ExecutionResult"/></returns>
-    public static ExecutionResult ThrowException(Exception? exception = null)
+    /// <returns>new instace of <see cref="QuestResult"/></returns>
+    public static QuestResult ThrowException(Exception? exception = null)
     {
-        return new ExecutionResult(ExecutionResultEnum.ThrowException, exception);
+        return new QuestResult(ExecutionResultEnum.ThrowException, exception);
     }
 }
 

@@ -33,6 +33,28 @@ public class ModelScraperDiTest
         Assert.Equal(ModelStateEnum.Disposed, model.State);
     }
 
+    [Fact(Timeout = 5000)]
+    public async Task ModelServices_InstanceAndRunWithObjUnusedInExc_Sucess()
+    {
+        var servicesBase 
+            = new ServicesTestBase();
+        var serviceProvider = servicesBase.ServiceProvider;
+
+        IModelScraper model 
+            = new ModelScraperService<SimpleExecution, SimpleData>(
+                1,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(1); },
+                args : new object[]{ new Obj1(), new Obj2() }
+            );
+
+        await model.Run();
+
+        await WaitModelFinish(model);
+
+        Assert.Equal(ModelStateEnum.Disposed, model.State);
+    }
+
 
     [Fact(Timeout = 5000)]
     public async Task ModelServices_TryExecutionWith100ThreadsWith1ConstructorInExc_Sucess()
@@ -49,7 +71,7 @@ public class ModelScraperDiTest
                 100,
                 serviceProvider,
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
-                whenOccursException: (ex, data) => { hasErrorInExecution = true; return ExecutionResult.ThrowException(); }
+                whenOccursException: (ex, data) => { hasErrorInExecution = true; return QuestResult.ThrowException(); }
             );
         
         await model.Run();
@@ -77,7 +99,7 @@ public class ModelScraperDiTest
                     100,
                     serviceProvider,
                     async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
-                    whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); }
+                    whenOccursException: (ex, data) => { return QuestResult.ThrowException(); }
                 );
         });
     }
@@ -98,7 +120,7 @@ public class ModelScraperDiTest
                 1,
                 serviceProvider,
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
-                whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); },
+                whenOccursException: (ex, data) => { return QuestResult.ThrowException(); },
                 args : new Obj1()
             );
 
@@ -123,7 +145,7 @@ public class ModelScraperDiTest
                 100,
                 serviceProvider,
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
-                whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); },
+                whenOccursException: (ex, data) => { return QuestResult.ThrowException(); },
                 whenAllWorksEnd: (list) => { excList = list; }
             );
 
@@ -150,7 +172,7 @@ public class ModelScraperDiTest
                 100,
                 serviceProvider,
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
-                whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); },
+                whenOccursException: (ex, data) => { return QuestResult.ThrowException(); },
                 whenAllWorksEnd: (list) => { excList = list; },
                 args: serviceArgs
             );
@@ -177,7 +199,7 @@ public class ModelScraperDiTest
                 100,
                 serviceProvider,
                 async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
-                whenOccursException: (ex, data) => { return ExecutionResult.ThrowException(); },
+                whenOccursException: (ex, data) => { return QuestResult.ThrowException(); },
                 whenAllWorksEnd: (list) => { excList = list; }
             );
 
@@ -246,6 +268,107 @@ public class ModelScraperDiTest
         Assert.All(excList, result => Assert.True(result.IsSucess));
 
         Assert.All(servicesOnCreate, result => Assert.Equal(service, result));
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task ServiceProvidier_DiWithTransient_FailedAllDifferent()
+    {
+        var servicesBase
+            = new ServicesTestBase((services) =>
+            {
+                services.AddTransient<ISimpleService, SimpleService>();
+                services.AddScoped<IServiceLinkedWithOther, ServiceLinkedWithOther>();
+            });
+        var serviceProvider = servicesBase.ServiceProvider;
+
+        IModelScraper? model = null;
+        
+        List<(ISimpleService SimpleService, IServiceLinkedWithOther LinkedWithOther)> servicesOnCreate = new();
+        IEnumerable<Results.ResultBase<Exception?>> excList = Enumerable.Empty<Results.ResultBase<Exception?>>();
+        model
+            = new ModelScraperService<SimpleExecutionLifeTimeService, SimpleData>(
+                100,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenExecutionCreated: (context) => servicesOnCreate.Add((context.Service, context.LinkedService)),
+                whenAllWorksEnd: (list) => { excList = list; }
+            );
+
+        await RunAndWaitAsync(model);
+
+        Assert.All(excList, result => Assert.True(result.IsSucess));
+
+        Assert.All(servicesOnCreate, result 
+            => Assert.NotEqual(result.SimpleService, result.LinkedWithOther.SimpleService));
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task ServiceProvidier_DiWithScooped_SucessAllExcEqual()
+    {
+        var servicesBase
+            = new ServicesTestBase((services) =>
+            {
+                services.AddScoped<ISimpleService, SimpleService>();
+                services.AddScoped<IServiceLinkedWithOther, ServiceLinkedWithOther>();
+            });
+        var serviceProvider = servicesBase.ServiceProvider;
+
+        IModelScraper? model = null;
+        
+        List<(ISimpleService SimpleService, IServiceLinkedWithOther LinkedWithOther)> servicesOnCreate = new();
+        IEnumerable<Results.ResultBase<Exception?>> excList = Enumerable.Empty<Results.ResultBase<Exception?>>();
+        model
+            = new ModelScraperService<SimpleExecutionLifeTimeService, SimpleData>(
+                100,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenExecutionCreated: (context) => servicesOnCreate.Add((context.Service, context.LinkedService)),
+                whenAllWorksEnd: (list) => { excList = list; }
+            );
+
+        await RunAndWaitAsync(model);
+
+        Assert.All(excList, result => Assert.True(result.IsSucess));
+
+        Assert.All(servicesOnCreate, result 
+            => Assert.Equal(result.SimpleService, result.LinkedWithOther.SimpleService));
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task ServiceProvidier_DiWithSingleton_SucessAllEqual()
+    {
+        var servicesBase
+            = new ServicesTestBase((services) =>
+            {
+                services.AddSingleton<ISimpleService, SimpleService>();
+                services.AddScoped<IServiceLinkedWithOther, ServiceLinkedWithOther>();
+            });
+        var serviceProvider = servicesBase.ServiceProvider;
+
+        var simpleServiceSingledon = serviceProvider.GetService<ISimpleService>();
+
+        IModelScraper? model = null;
+        
+        List<(ISimpleService SimpleService, IServiceLinkedWithOther LinkedWithOther)> servicesOnCreate = new();
+        IEnumerable<Results.ResultBase<Exception?>> excList = Enumerable.Empty<Results.ResultBase<Exception?>>();
+        model
+            = new ModelScraperService<SimpleExecutionLifeTimeService, SimpleData>(
+                100,
+                serviceProvider,
+                async () => { await Task.CompletedTask; return SimpleDataFactory.GetData(100); },
+                whenExecutionCreated: (context) => servicesOnCreate.Add((context.Service, context.LinkedService)),
+                whenAllWorksEnd: (list) => { excList = list; }
+            );
+
+        await RunAndWaitAsync(model);
+
+        Assert.All(excList, result => Assert.True(result.IsSucess));
+
+        Assert.All(servicesOnCreate, result 
+            => Assert.Equal(simpleServiceSingledon, result.SimpleService));
+
+        Assert.All(servicesOnCreate, result 
+            => Assert.Equal(simpleServiceSingledon, result.LinkedWithOther.SimpleService));
     }
 
     public static async Task WaitModelFinish(IModelScraper model, CancellationToken cancellationToken = default)

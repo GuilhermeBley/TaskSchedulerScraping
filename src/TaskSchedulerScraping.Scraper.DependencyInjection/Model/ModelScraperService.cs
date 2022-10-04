@@ -11,7 +11,7 @@ namespace TaskSchedulerScraping.Scraper.DependencyInjection.Model;
 /// <inheritdoc path="*"/>
 public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecutionContext, TData>
     where TData : class
-    where TExecutionContext : ExecutionContext<TData>
+    where TExecutionContext : Quest<TData>
 {
     /// <summary>
     /// Instance with service provider
@@ -37,7 +37,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
         int countScraper,
         IServiceProvider serviceProvider,
         Func<Task<IEnumerable<TData>>> getData,
-        Func<Exception, TData, ExecutionResult>? whenOccursException = null,
+        Func<Exception, TData, QuestResult>? whenOccursException = null,
         Action<ResultBase<TData>>? whenDataFinished = null,
         Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null,
         Action<IEnumerable<TData>>? whenDataWasCollected = null,
@@ -73,7 +73,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     }
 
     /// <summary>
-    /// Method get shared objects which the parameters is tagged with <see cref="ScraperObjSharedAttribute"/>
+    /// Method get shared objects which the parameters is tagged with <see cref="SharedServiceAttribute"/>
     /// </summary>
     /// <exception cref="ArgumentException"></exception>
     private static IEnumerable<object> GetShraredArgs(IServiceProvider serviceProvider, params object[] args)
@@ -89,16 +89,13 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
 
         foreach (var parameter in constructor.GetParameters())
         {
-            if (!parameter.GetCustomAttributes(typeof(ScraperObjSharedAttribute), true).Any())
+            if (!parameter.GetCustomAttributes(typeof(SharedServiceAttribute), true).Any())
                 continue;
 
             object? sharedObj = null;
 
-            sharedObj = args.FirstOrDefault(o => o.GetType().Equals(parameter.ParameterType));
-
-            if (sharedObj != null)
+            if (args.FirstOrDefault(o => o.GetType().Equals(parameter.ParameterType)) != null)
             {
-                sharedArgs.Add(sharedObj);
                 continue;
             }
 

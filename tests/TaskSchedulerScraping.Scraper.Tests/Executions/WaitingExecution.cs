@@ -2,7 +2,7 @@ using TaskSchedulerScraping.Scraper.Model;
 
 namespace TaskSchedulerScraping.Scraper.Tests.Executions;
 
-internal class WaitingExecution : ExecutionContext<IntegerData>
+internal class WaitingExecution : Quest<IntegerData>
 {
     private int _milisseconds { get; } = 1;
 
@@ -16,12 +16,12 @@ internal class WaitingExecution : ExecutionContext<IntegerData>
         
     }
 
-    public override ExecutionResult Execute(IntegerData data, CancellationToken cancellationToken = default)
+    public override QuestResult Execute(IntegerData data, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         Thread.Sleep(_milisseconds);
 
-        return ExecutionResult.Ok();
+        return QuestResult.Ok();
     }
 }

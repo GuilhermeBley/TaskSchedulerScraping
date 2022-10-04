@@ -174,7 +174,7 @@ public class ModelScraperTest
                 () => new ThrowExcIntegerExecution(onError) { OnSearch = (data) => { blockList.Add(data.Id); } },
                 async () => { await Task.CompletedTask; return IntegerDataFactory.GetData(100); },
                 whenAllWorksEnd: (finishList) => { isFinished = true; },
-                whenOccursException: (exception, data) => { return ExecutionResult.RetryOther(); }
+                whenOccursException: (exception, data) => { return QuestResult.RetryOther(); }
             );
 
         var resultRun = await model.Run();
@@ -477,7 +477,7 @@ public class ModelScraperTest
                 () => new ThrowExcIntegerExecution(1) { OnSearch = (data) => { blockList.Add(data.Id); } },
                 async () => { await Task.CompletedTask; return IntegerDataFactory.GetData(1); },
                 whenDataFinished: (data) => { isSucessDataSearch = data.IsSucess; isWhenDataFinished = true; },
-                whenOccursException: (ex, data) => { return ExecutionResult.Ok(); }
+                whenOccursException: (ex, data) => { return QuestResult.Ok(); }
             );
 
         var resultRun = await model.Run();

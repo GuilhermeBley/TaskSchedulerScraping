@@ -2,16 +2,16 @@ using TaskSchedulerScraping.Scraper.Model;
 
 namespace TaskSchedulerScraping.Scraper.DependencyInjection.Tests.Executions;
 
-internal class SimpleExecution : ExecutionContext<SimpleData>
+internal class SimpleExecution : Quest<SimpleData>
 {
     public override void Dispose()
     {
         
     }
 
-    public override ExecutionResult Execute(SimpleData data, CancellationToken cancellationToken = default)
+    public override QuestResult Execute(SimpleData data, CancellationToken cancellationToken = default)
     {
         Thread.Sleep(10);
-        return ExecutionResult.Ok();
+        return QuestResult.Ok();
     }
 }

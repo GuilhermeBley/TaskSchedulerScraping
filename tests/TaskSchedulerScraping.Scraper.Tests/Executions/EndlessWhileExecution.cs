@@ -3,7 +3,7 @@ using TaskSchedulerScraping.Scraper.Results.Context;
 
 namespace TaskSchedulerScraping.Scraper.Tests.Executions;
 
-internal class EndlessWhileExecution : ExecutionContext<SimpleData>
+internal class EndlessWhileExecution : Quest<SimpleData>
 {
     public bool InRepeat = true;
 
@@ -12,11 +12,11 @@ internal class EndlessWhileExecution : ExecutionContext<SimpleData>
 
     }
 
-    public override ExecutionResult Execute(SimpleData data, CancellationToken cancellationToken = default)
+    public override QuestResult Execute(SimpleData data, CancellationToken cancellationToken = default)
     {
         while (InRepeat)
             Thread.Sleep(50);
 
-        return ExecutionResult.Ok();
+        return QuestResult.Ok();
     }
 }

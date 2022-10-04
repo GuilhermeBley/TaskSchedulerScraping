@@ -3,7 +3,7 @@ using TaskSchedulerScraping.Scraper.Results.Context;
 
 namespace TaskSchedulerScraping.Scraper.Tests.Executions;
 
-internal class EndlessExecution : ExecutionContext<SimpleData>
+internal class EndlessExecution : Quest<SimpleData>
 {
     public bool IsActiveError = true;
     public bool _hasError = false;
@@ -13,12 +13,12 @@ internal class EndlessExecution : ExecutionContext<SimpleData>
 
     }
 
-    public override ExecutionResult Execute(SimpleData data, CancellationToken cancellationToken = default)
+    public override QuestResult Execute(SimpleData data, CancellationToken cancellationToken = default)
     {
         while (true)
         {
             if (_hasError)
-                return ExecutionResult.Ok();
+                return QuestResult.Ok();
             
             try
             {

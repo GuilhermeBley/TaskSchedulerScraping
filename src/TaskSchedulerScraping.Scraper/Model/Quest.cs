@@ -3,10 +3,10 @@ using TaskSchedulerScraping.Scraper.Results.Context;
 namespace TaskSchedulerScraping.Scraper.Model;
 
 /// <summary>
-/// Context execution
+/// Context to execute quest
 /// </summary>
 /// <typeparam name="TData">Works with a type of data.</typeparam>
-public abstract class ExecutionContext<TData> : IDisposable
+public abstract class Quest<TData> : IDisposable
     where TData : class
 {
     /// <summary>
@@ -26,7 +26,7 @@ public abstract class ExecutionContext<TData> : IDisposable
     /// Execution
     /// </summary>
     /// <param name="data">Data to execute</param>
-    public abstract ExecutionResult Execute(TData data, CancellationToken cancellationToken = default);
+    public abstract QuestResult Execute(TData data, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Dispose resources from instance

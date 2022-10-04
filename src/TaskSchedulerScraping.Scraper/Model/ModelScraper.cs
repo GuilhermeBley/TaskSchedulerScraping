@@ -11,7 +11,7 @@ namespace TaskSchedulerScraping.Scraper.Model;
 /// <typeparam name="TData">Initial data to execute</typeparam>
 public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     where TData : class
-    where TExecutionContext : ExecutionContext<TData>
+    where TExecutionContext : Quest<TData>
 {
     /// <summary>
     /// Finished execution list
@@ -56,7 +56,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     /// <summary>
     /// Called when exception occurs in a execution
     /// </summary>
-    private readonly Func<Exception, TData, ExecutionResult>? _whenOccursException;
+    private readonly Func<Exception, TData, QuestResult>? _whenOccursException;
 
     /// <summary>
     /// Called when all data was collected to run.
@@ -140,7 +140,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
         int countScraper,
         Func<TExecutionContext> getContext,
         Func<Task<IEnumerable<TData>>> getData,
-        Func<Exception, TData, ExecutionResult>? whenOccursException = null,
+        Func<Exception, TData, QuestResult>? whenOccursException = null,
         Action<ResultBase<TData>>? whenDataFinished = null,
         Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null,
         Action<IEnumerable<TData>>? whenDataWasCollected = null)
@@ -468,7 +468,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
             return;
         }
 
-        ExecutionResult executionResult;
+        QuestResult executionResult;
         Exception? exception = null;
         try
         {
@@ -477,13 +477,13 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
         }
         catch (OperationCanceledException)
         {
-            executionResult = ExecutionResult.RetrySame("Pending request");
+            executionResult = QuestResult.RetrySame("Pending request");
         }
         catch (Exception e)
         {
             exception = e;
             executionResult =
-                _whenOccursException is null ? ExecutionResult.ThrowException(e) :
+                _whenOccursException is null ? QuestResult.ThrowException(e) :
                 _whenOccursException.Invoke(e, dataToSearch);
         }
 
