@@ -1,6 +1,7 @@
 using TaskSchedulerScraping.Scraper.DependencyInjection.Model;
 using TaskSchedulerScraping.Scraper.Model;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Concurrent;
 
 namespace TaskSchedulerScraping.Scraper.DependencyInjection.Tests;
 
@@ -385,7 +386,7 @@ public class ModelScraperDiTest
             });
         var serviceProvider = servicesBase.ServiceProvider;
 
-        List<ISimpleService> servicesInExecutionsModel1 = new();
+        BlockingCollection<ISimpleService> servicesInExecutionsModel1 = new();
         IEnumerable<Results.ResultBase<Exception?>> excList1 = Enumerable.Empty<Results.ResultBase<Exception?>>();
         var model1
             = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
@@ -405,8 +406,8 @@ public class ModelScraperDiTest
 
         Assert.All(servicesInExecutionsModel1, result 
             => Assert.Equal(serviceModel1, result));
-            
-        List<ISimpleService> servicesInExecutionsModel2 = new();
+
+        BlockingCollection<ISimpleService> servicesInExecutionsModel2 = new();
         IEnumerable<Results.ResultBase<Exception?>> excList2 = Enumerable.Empty<Results.ResultBase<Exception?>>();
         var model2
             = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
@@ -435,7 +436,7 @@ public class ModelScraperDiTest
             });
         var serviceProvider = servicesBase.ServiceProvider;
 
-        List<ISimpleService> servicesInExecutionsModel1 = new();
+        BlockingCollection<ISimpleService> servicesInExecutionsModel1 = new();
         IEnumerable<Results.ResultBase<Exception?>> excList1 = Enumerable.Empty<Results.ResultBase<Exception?>>();
         var model1
             = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
@@ -455,8 +456,8 @@ public class ModelScraperDiTest
 
         Assert.All(servicesInExecutionsModel1, result 
             => Assert.Equal(serviceModel1, result));
-            
-        List<ISimpleService> servicesInExecutionsModel2 = new();
+
+        BlockingCollection<ISimpleService> servicesInExecutionsModel2 = new();
         IEnumerable<Results.ResultBase<Exception?>> excList2 = Enumerable.Empty<Results.ResultBase<Exception?>>();
         var model2
             = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
@@ -487,7 +488,7 @@ public class ModelScraperDiTest
 
         var singledonService = serviceProvider.GetRequiredService<ISimpleService>();
 
-        List<ISimpleService> servicesInExecutionsModel1 = new();
+        BlockingCollection<ISimpleService> servicesInExecutionsModel1 = new();
         IEnumerable<Results.ResultBase<Exception?>> excList1 = Enumerable.Empty<Results.ResultBase<Exception?>>();
         var model1
             = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
@@ -504,8 +505,8 @@ public class ModelScraperDiTest
 
         Assert.All(servicesInExecutionsModel1, result 
             => Assert.Equal(singledonService, result));
-            
-        List<ISimpleService> servicesInExecutionsModel2 = new();
+
+        BlockingCollection<ISimpleService> servicesInExecutionsModel2 = new();
         IEnumerable<Results.ResultBase<Exception?>> excList2 = Enumerable.Empty<Results.ResultBase<Exception?>>();
         var model2
             = new ModelScraperService<SimpleExecutionShareService, SimpleData>(
