@@ -9,7 +9,7 @@ namespace TaskSchedulerScraping.Scraper.Model;
 /// </summary>
 /// <typeparam name="TExecutionContext">Context to execution</typeparam>
 /// <typeparam name="TData">Initial data to execute</typeparam>
-public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
+public class ModelScraper<TExecutionContext, TData> : IModelScraper
     where TData : class
     where TExecutionContext : Quest<TData>
 {
@@ -89,14 +89,9 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     private bool _pausing = false;
 
     /// <summary>
-    /// Thread in running
+    /// Object can be used to lock in multithread requests
     /// </summary>
-    private bool _running = false;
-
-    /// <summary>
-    /// Thread in disposing
-    /// </summary>
-    private bool _disposing = false;
+    private readonly object _stateLock = new();
 
     /// <summary>
     /// Scraping to execute
@@ -123,9 +118,9 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public ModelScraper(
-        int countScraper,
-        Func<TExecutionContext> getContext,
-        Func<Task<IEnumerable<TData>>> getData)
+            int countScraper,
+            Func<TExecutionContext> getContext,
+            Func<Task<IEnumerable<TData>>> getData)
     {
         if (countScraper < 1)
             throw new ArgumentOutOfRangeException($"{nameof(countScraper)} should be more than zero.");
@@ -153,102 +148,111 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     }
 
     /// <summary>
-    /// Use <see cref="StopAsync"/>
+    /// Disposable, cancel all threads in execution
     /// </summary>
     public void Dispose()
     {
-        StopAsync().GetAwaiter().GetResult();
+        TryRequestStop();
+    }
+
+    /// <summary>
+    /// Async disposable, cancel all threads in execution and wait cancel
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        await StopAsync();
     }
 
     /// <inheritdoc path="*"/>
     public async Task<ResultBase<PauseModel>> PauseAsync(bool pause = true, CancellationToken cancellationToken = default)
     {
-        if (_status.IsDisposed())
+        ModelStateEnum stateLocked;
+        lock (_stateLock)
         {
-            await Task.CompletedTask;
-            return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Already disposed"));
+            if (_status.IsDisposedOrDisposing())
+            {
+                return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Already disposed"));
+            }
+
+            stateLocked = _status.State;
         }
 
-        if ((_pausing && pause) || (pause && _status.State == ModelStateEnum.WaitingPause))
+        if (pause && stateLocked == ModelStateEnum.WaitingPause)
         {
             await WaitStateAllContexts(ModelStateEnum.Paused, cancellationToken);
             return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.InProcess));
         }
 
-        if ((_pausing && !pause) || (!pause && _status.State == ModelStateEnum.WaitingRunning))
+        if (!pause && stateLocked == ModelStateEnum.WaitingRunning)
         {
             await WaitStateAllContexts(ModelStateEnum.Running, cancellationToken);
             return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.InProcess));
         }
 
-        _pausing = true;
-        try
+        if (pause && _status.State == ModelStateEnum.Paused)
+            return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Paused));
+
+        if (!pause && _status.State == ModelStateEnum.Running)
+            return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Running));
+
+        if (pause)
         {
-            if (pause && _status.State == ModelStateEnum.Paused)
-                return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Paused));
-
-            if (!pause && _status.State == ModelStateEnum.Running)
-                return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Running));
-
-            if (pause)
+            try
             {
-                try
+                lock (_stateLock)
                 {
                     _mreWaitProcessing.Reset();
-
-                    _status.SetStatus(ModelStateEnum.WaitingPause);
 
                     _cts.Cancel();
                     _mrePause.Reset();
 
                     SetStateAllContexts(ContextRunEnum.Paused);
-                }
-                finally
-                {
-                    _mreWaitProcessing.Set();
-                }
 
-                await WaitStateAllContexts(ModelStateEnum.Paused, cancellationToken);
-
-                return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Paused));
+                    _status.SetState(ModelStateEnum.WaitingPause);
+                }
+            }
+            finally
+            {
+                _mreWaitProcessing.Set();
             }
 
-            if (!pause)
+            await WaitStateAllContexts(ModelStateEnum.Paused, cancellationToken);
+
+            return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Paused));
+        }
+
+        if (!pause)
+        {
+            try
             {
-                try
+                lock (_stateLock)
                 {
                     _mreWaitProcessing.Reset();
 
-                    _status.SetStatus(ModelStateEnum.WaitingRunning);
+                    _status.SetState(ModelStateEnum.WaitingRunning);
 
-                    lock (_cts)
-                    {
-                        if (!_cts.IsCancellationRequested)
-                            _cts.Cancel();
-                        _cts.Dispose();
-                        _cts = new();
-                    }
+                    if (!_cts.IsCancellationRequested)
+                        _cts.Cancel();
+                    _cts.Dispose();
+                    _cts = new();
 
                     SetStateAllContexts(ContextRunEnum.Running);
                 }
-                finally
-                {
-                    _mreWaitProcessing.Set();
-                    _mrePause.Set();
-                }
-
-                await WaitStateAllContexts(ModelStateEnum.Running, cancellationToken);
-
-                return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Running));
+            }
+            finally
+            {
+                _mreWaitProcessing.Set();
+                _mrePause.Set();
             }
 
-            else
-                return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Option not finded."));
+            await WaitStateAllContexts(ModelStateEnum.Running, cancellationToken);
+
+            return ResultBase<PauseModel>.GetSucess(new PauseModel(PauseModelEnum.Running));
         }
-        finally
-        {
-            _pausing = false;
-        }
+
+        else
+            return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Option not finded."));
+
     }
 
     /// <inheritdoc path="*"/>
@@ -256,32 +260,40 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     {
         _mreWaitProcessing.WaitOne();
 
-        if (_running == true)
-            return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "In process to start."));
-
-        if (_status.IsDisposed())
+        lock (_stateLock)
         {
-            return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.Disposed, _countScraper, "Already disposed."));
-        }
+            if (_status.IsDisposedOrDisposing())
+            {
+                return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.Disposed, _countScraper, "Already disposed."));
+            }
 
-        if (_status.State != ModelStateEnum.NotRunning)
-        {
-            return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "Already started."));
+            if (_status.State != ModelStateEnum.NotRunning)
+            {
+                return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.AlreadyExecuted, _countScraper, "Already started."));
+            }
+
+            lock (_stateLock)
+                _status.SetState(ModelStateEnum.WaitingRunning);
         }
 
         try
         {
-            _running = true;
-
-            _mreWaitProcessing.Reset();
-
-            _status.SetStatus(ModelStateEnum.WaitingRunning);
-
             var data = await _getData.Invoke();
 
             _searchData = new ConcurrentQueue<TData>(data);
 
             _whenDataWasCollected?.Invoke(data);
+        }
+        catch
+        {
+            lock (_stateLock)
+                _status.SetState(ModelStateEnum.NotRunning);
+            throw;
+        }
+
+        try
+        {
+            _mreWaitProcessing.Reset();
 
             for (int indexScraper = 0; indexScraper < _countScraper; indexScraper++)
             {
@@ -299,7 +311,8 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
                         {
                             if (IsFinished())
                             {
-                                _status.SetStatus(ModelStateEnum.Disposed);
+                                lock (_stateLock)
+                                    _status.SetState(ModelStateEnum.Disposed);
 
                                 try
                                 {
@@ -318,7 +331,8 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
                 thread.Start();
             };
 
-            _status.SetStatus(ModelStateEnum.Running);
+            lock (_stateLock)
+                _status.SetState(ModelStateEnum.Running);
 
             return ResultBase<RunModel>.GetSucess(new RunModel(RunModelEnum.OkRequest, _countScraper));
         }
@@ -329,7 +343,6 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
         finally
         {
             _mreWaitProcessing.Set();
-            _running = false;
         }
 
     }
@@ -345,21 +358,35 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
 
         _mreWaitProcessing.WaitOne();
 
-        if (_disposing || _status.State == ModelStateEnum.WaitingDispose)
-        {
+        TryRequestStop();
+
+        if (_status.State == ModelStateEnum.WaitingDispose)
             await WaitStateAllContexts(ModelStateEnum.Disposed, cancellationToken);
-            return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.InProcess));
-        }
 
-        _disposing = true;
+        return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.Stoped));
+    }
 
-        try
+    /// <summary>
+    /// This method request cancel to all quests
+    /// </summary>
+    /// <remarks>
+    ///     <para></para>
+    ///     <para>Unpause threads</para>
+    ///     <para>Cancel Cancellation Token</para>
+    ///     <para>Set all contexts to cancel</para>
+    /// </remarks>
+    private void TryRequestStop()
+    {
+        lock (_stateLock)
         {
+            if (_status.IsDisposedOrDisposing())
+            {
+                return;
+            }
+
             try
             {
                 _mreWaitProcessing.Reset();
-
-                _status.SetStatus(ModelStateEnum.WaitingDispose);
 
                 _mrePause.Set();
 
@@ -367,20 +394,13 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
                     _cts.Cancel();
 
                 SetStateAllContexts(ContextRunEnum.Disposed);
+
+                _status.SetState(ModelStateEnum.WaitingDispose);
             }
             finally
             {
                 _mreWaitProcessing.Set();
             }
-
-            await WaitStateAllContexts(ModelStateEnum.Disposed, cancellationToken);
-
-            return ResultBase<StopModel>.GetSucess(new StopModel(StopModelEnum.Stoped));
-        }
-        finally
-        {
-            _disposing = false;
-            _cts.Dispose();
         }
     }
 
@@ -401,7 +421,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
                     new InvalidOperationException($"Failed to create {nameof(TExecutionContext)}.", e)
                 );
         }
-        
+
         if (executionContext.Id != Thread.CurrentThread.ManagedThreadId)
             throw new ArgumentException($"Context doesn't executing in correct process. Check if ");
 
@@ -446,7 +466,10 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
 
             if (_status.State != ModelStateEnum.Paused &&
             _contexts.All(context => context.Context.CurrentStatus == ContextRunEnum.Paused || context.Context.IsDisposed()))
-                _status.SetStatus(ModelStateEnum.Paused);
+            {
+                lock(_stateLock)
+                    _status.SetState(ModelStateEnum.Paused);
+            }
 
             _mrePause.WaitOne();
             RunLoopSearch(executionContext, dataToSearch);
@@ -457,7 +480,11 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
 
         if (_status.State != ModelStateEnum.Running &&
             _contexts.All(context => context.Context.CurrentStatus == ContextRunEnum.Running))
-            _status.SetStatus(ModelStateEnum.Running);
+        {
+            lock(_stateLock)
+                _status.SetState(ModelStateEnum.Running);
+        }
+
 
         if (dataToSearch is null)
             _searchData.TryDequeue(out dataToSearch);
@@ -577,21 +604,27 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
     private class ModelScraperStatus
     {
         private ModelStateEnum _state = ModelStateEnum.NotRunning;
-        public ModelStateEnum State => _state;
+        public ModelStateEnum State => GetLockedState();
 
         /// <summary>
-        /// Set <see cref="State"/>
+        /// Object can be used to lock in multithread requests
         /// </summary>
-        /// <param name="state">Status to set</param>
-        /// <returns>result base</returns>
-        public ResultBase<string> SetStatus(ModelStateEnum state)
+        private readonly object _stateLock = new();
+
+        /// <summary>
+        /// Set a value with thread safe
+        /// </summary>
+        /// <param name="state">State to set</param>
+        /// <param name="whileLocked">Action before setting, includes in safe processing</param>
+        /// <returns></returns>
+        public ResultBase<string> SetState(ModelStateEnum state)
         {
-            lock (this)
+            lock (_stateLock)
             {
                 if (_state == ModelStateEnum.Disposed)
                     return ResultBase<string>.GetWithError("Already disposed.");
 
-                if (state == ModelStateEnum.NotRunning)
+                if (state == ModelStateEnum.NotRunning && _state != ModelStateEnum.WaitingRunning)
                     return ResultBase<string>.GetWithError("Already started.");
 
                 if (state == _state)
@@ -603,11 +636,36 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper, IDisposable
         }
 
         /// <summary>
+        /// Gets locked state
+        /// </summary>
+        /// <remarks>
+        ///     <para>Use lock state</para>
+        /// </remarks>
+        private ModelStateEnum GetLockedState()
+        {
+            lock (_stateLock)
+                return _state;
+        }
+
+        /// <summary>
         /// Check if is disposed
         /// </summary>
         public bool IsDisposed()
         {
-            if (_state == ModelStateEnum.Disposed)
+            if (GetLockedState() == ModelStateEnum.Disposed)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Check if is disposed or disposing
+        /// </summary>
+        public bool IsDisposedOrDisposing()
+        {
+            var state = GetLockedState();
+            if (state == ModelStateEnum.WaitingDispose
+                || state == ModelStateEnum.Disposed)
                 return true;
 
             return false;

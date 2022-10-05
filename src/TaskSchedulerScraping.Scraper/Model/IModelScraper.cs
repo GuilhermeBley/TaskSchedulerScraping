@@ -6,7 +6,7 @@ namespace TaskSchedulerScraping.Scraper.Model;
 /// <summary>
 /// Basics functions for process
 /// </summary>
-public interface IModelScraper
+public interface IModelScraper : IDisposable, IAsyncDisposable
 {
     /// <summary>
     /// Identifier
