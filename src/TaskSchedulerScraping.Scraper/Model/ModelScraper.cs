@@ -7,6 +7,9 @@ namespace TaskSchedulerScraping.Scraper.Model;
 /// <summary>
 /// Class run executions with initial data to search
 /// </summary>
+/// <remarks>
+///     <para>Class works with a quantity of data predefined</para>
+/// </remarks>
 /// <typeparam name="TExecutionContext">Context to execution</typeparam>
 /// <typeparam name="TData">Initial data to execute</typeparam>
 public class ModelScraper<TExecutionContext, TData> : IModelScraper
