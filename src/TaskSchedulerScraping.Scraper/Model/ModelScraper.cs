@@ -46,21 +46,33 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     /// <summary>
     /// It is invoked when all workers finished
     /// </summary>
+    /// <remarks>
+    ///     <para>Last thread execute this method when all of search is disposed</para>
+    /// </remarks>
     private readonly Action<IEnumerable<ResultBase<Exception?>>>? _whenAllWorksEnd;
 
     /// <summary>
     /// It is invoked when the data have searched with success or no.
     /// </summary>
+    /// <remarks>
+    ///     <para>When a data was finished, the thread call this function</para>
+    /// </remarks>
     private readonly Action<ResultBase<TData>>? _whenDataFinished;
 
     /// <summary>
     /// Called when exception occurs in a execution
     /// </summary>
+    /// <remarks>
+    ///     <para>Thread which throw exception call this to know your next behavior</para>
+    /// </remarks>
     private readonly Func<Exception, TData, QuestResult>? _whenOccursException;
 
     /// <summary>
     /// Called when all data was collected to run.
     /// </summary>
+    /// <remarks>
+    ///     <para>When data to search was collected in Run, this method is called</para>
+    /// </remarks>
     private readonly Action<IEnumerable<TData>>? _whenDataWasCollected;
 
     /// <summary>
@@ -84,11 +96,6 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     private ConcurrentQueue<TData> _searchData = new();
 
     /// <summary>
-    /// Thread in pausing
-    /// </summary>
-    private bool _pausing = false;
-
-    /// <summary>
     /// Object can be used to lock in multithread requests
     /// </summary>
     private readonly object _stateLock = new();
@@ -97,6 +104,11 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     /// Scraping to execute
     /// </summary>
     private int _countScraper { get; }
+    
+    /// <summary>
+    /// Run at
+    /// </summary>
+    private DateTime? _dtRun = null;
 
     /// <inheritdoc cref="_countScraper" path="*"/>
     public int CountScraper => _countScraper;
@@ -108,6 +120,11 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
 
     /// <inheritdoc/>
     public ModelStateEnum State => _status.State;
+
+    /// <summary>
+    /// Run at
+    /// </summary>
+    public DateTime? DtRun => _dtRun;
 
     /// <summary>
     /// Instance of type <see cref="ModelScraper"/>
@@ -130,7 +147,16 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
         _getData = getData;
     }
 
-    /// <inheritdoc path="*"/>
+    /// <summary>
+    /// Instance with actions and functions
+    /// </summary>
+    /// <param name="countScraper">Quantity scrappers to run</param>
+    /// <param name="getContext">Func to get new context</param>
+    /// <param name="getData">Func to get all data to search</param>
+    /// <param name="whenOccursException">Thread which throw exception call this to know your next behavior</param>
+    /// <param name="whenDataFinished">When a data was finished, the thread call this function</param>
+    /// <param name="whenAllWorksEnd">Last thread execute this method when all of search is disposed</param>
+    /// <param name="whenDataWasCollected">When data to search was collected in Run, this method is called</param>
     public ModelScraper(
         int countScraper,
         Func<TExecutionContext> getContext,
@@ -174,7 +200,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
                 return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Already disposed"));
             }
 
-            if (_status.IsInitialized())
+            if (_status.IsInitializing())
             {
                 return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Not Initialized"));
             }
@@ -344,6 +370,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
         }
         finally
         {
+            _dtRun = DateTime.Now;
             _mreWaitProcessing.Set();
         }
 
@@ -678,7 +705,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
         /// <summary>
         /// Check if is NotRunning or WaitingRunning
         /// </summary>
-        public bool IsInitialized()
+        public bool IsInitializing()
         {
              var state = GetLockedState();
             if (state == ModelStateEnum.WaitingRunning

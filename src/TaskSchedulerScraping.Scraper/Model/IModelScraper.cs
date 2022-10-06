@@ -14,6 +14,11 @@ public interface IModelScraper : IDisposable, IAsyncDisposable
     Guid IdScraper { get; }
 
     /// <summary>
+    /// Date of initializes run
+    /// </summary>
+    public DateTime? DtRun { get; }
+
+    /// <summary>
     /// Number of scraper to execute your context
     /// </summary>
     int CountScraper { get; }
