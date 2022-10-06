@@ -12,9 +12,9 @@ namespace TaskSchedulerScraping.Scraper.DependencyInjection.Model;
 ///     <para>Class creates a new scope of service providier for each execution.</para>
 /// </remarks>
 /// <inheritdoc path="*"/>
-public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecutionContext, TData>
+public class ModelScraperService<TQuest, TData> : ModelScraper<TQuest, TData>
     where TData : class
-    where TExecutionContext : Quest<TData>
+    where TQuest : Quest<TData>
 {
     /// <summary>
     /// Instance with service provider
@@ -35,7 +35,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// <inheritdoc path="*"/>
     /// <param name="serviceProvider">Services</param>
     /// <param name="args">Same obj to constructors of executions</param>
-    /// <param name="whenExecutionCreated">When execution was created, this action was invoked with new instance of <typeparamref name="TExecutionContext"/></param>
+    /// <param name="whenExecutionCreated">When execution was created, this action was invoked with new instance of <typeparamref name="TQuest"/></param>
     public ModelScraperService(
         int countScraper,
         IServiceProvider serviceProvider,
@@ -44,7 +44,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
         Action<ResultBase<TData>>? whenDataFinished = null,
         Action<IEnumerable<ResultBase<Exception?>>>? whenAllWorksEnd = null,
         Action<IEnumerable<TData>>? whenDataWasCollected = null,
-        Action<TExecutionContext>? whenExecutionCreated = null,
+        Action<TQuest>? whenExecutionCreated = null,
         params object[] args
         ) : base(countScraper, GetContextWithServices(serviceProvider, whenExecutionCreated, args), getData, whenOccursException, whenDataFinished, whenAllWorksEnd, whenDataWasCollected)
     {
@@ -54,21 +54,21 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// Method make a function that returns a new instance of exection with our services
     /// </summary>
     /// <param name="serviceProvider">Services</param>
-    /// <returns>Function that returns new <typeparamref name="TExecutionContext"/></returns>
+    /// <returns>Function that returns new <typeparamref name="TQuest"/></returns>
     /// <exception cref="Exception"></exception>
-    private static Func<TExecutionContext> GetContextWithServices(IServiceProvider serviceProvider, Action<TExecutionContext>? whenExecutionCreated = null, params object[] args)
+    private static Func<TQuest> GetContextWithServices(IServiceProvider serviceProvider, Action<TQuest>? whenExecutionCreated = null, params object[] args)
     {
-        var executionType = typeof(TExecutionContext);
+        var executionType = typeof(TQuest);
 
         if (executionType.GetConstructors().Where(c => c.IsPublic).Count() > 1)
-            throw new Exception($"{nameof(TExecutionContext)} should be have only one or zero public constructors.");
+            throw new Exception($"{nameof(TQuest)} should be have only one or zero public constructors.");
 
         args = Enumerable.Concat(args ,GetShraredArgs(serviceProvider.CreateScope(), args)).ToArray();
         
         var functionExc = () =>
         {
             IServiceScope scope = serviceProvider.CreateScope();
-            var exc = ActivatorUtilities.CreateInstance<TExecutionContext>(scope.ServiceProvider, args);
+            var exc = ActivatorUtilities.CreateInstance<TQuest>(scope.ServiceProvider, args);
             whenExecutionCreated?.Invoke(exc);
             return exc;
         };
@@ -82,7 +82,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
     /// <exception cref="ArgumentException"></exception>
     private static IEnumerable<object> GetShraredArgs(IServiceScope scope, params object[] args)
     {
-        var executionType = typeof(TExecutionContext);
+        var executionType = typeof(TQuest);
 
         List<object> sharedArgs = new();
 
@@ -112,7 +112,7 @@ public class ModelScraperService<TExecutionContext, TData> : ModelScraper<TExecu
             }
 
             throw new ArgumentException(
-                $"Parameter of constructor '{nameof(TExecutionContext)}' didn't be found or create.", 
+                $"Parameter of constructor '{nameof(TQuest)}' didn't be found or create.", 
                 parameter.ParameterType.ToString());
 
         }

@@ -10,11 +10,11 @@ namespace TaskSchedulerScraping.Scraper.Model;
 /// <remarks>
 ///     <para>Class works with a quantity of data predefined</para>
 /// </remarks>
-/// <typeparam name="TExecutionContext">Context to execution</typeparam>
+/// <typeparam name="TQuest">Context to execution</typeparam>
 /// <typeparam name="TData">Initial data to execute</typeparam>
-public class ModelScraper<TExecutionContext, TData> : IModelScraper
+public class ModelScraper<TQuest, TData> : IModelScraper
     where TData : class
-    where TExecutionContext : Quest<TData>
+    where TQuest : Quest<TData>
 {
     /// <summary>
     /// Finished execution list
@@ -34,7 +34,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     /// <summary>
     /// Concurrent list of execution context
     /// </summary>
-    private readonly Func<TExecutionContext> _getContext;
+    private readonly Func<TQuest> _getContext;
 
     /// <summary>
     /// Function to get data to search
@@ -44,7 +44,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     /// <summary>
     /// Concurrent list of execution context
     /// </summary>
-    private readonly BlockingCollection<TExecutionContext> _contexts = new();
+    private readonly BlockingCollection<TQuest> _contexts = new();
 
     /// <summary>
     /// It is invoked when all workers finished
@@ -139,7 +139,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public ModelScraper(
             int countScraper,
-            Func<TExecutionContext> getContext,
+            Func<TQuest> getContext,
             Func<Task<IEnumerable<TData>>> getData)
     {
         if (countScraper < 1)
@@ -162,7 +162,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     /// <param name="whenDataWasCollected">When data to search was collected in Run, this method is called</param>
     public ModelScraper(
         int countScraper,
-        Func<TExecutionContext> getContext,
+        Func<TQuest> getContext,
         Func<Task<IEnumerable<TData>>> getData,
         Func<Exception, TData, QuestResult>? whenOccursException = null,
         Action<ResultBase<TData>>? whenDataFinished = null,
@@ -455,12 +455,12 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     /// Only one Thread should be acess this method
     /// </summary>
     /// <remarks>
-    ///     <para>Creates a new instance of <typeparamref name="TExecutionContext"/> to each thread which executes this method</para>
+    ///     <para>Creates a new instance of <typeparamref name="TQuest"/> to each thread which executes this method</para>
     /// </remarks>
     private ResultBase<Exception?> RunExecute()
     {
         Exception? exceptionEnd = null;
-        TExecutionContext executionContext;
+        TQuest executionContext;
         try
         {
             executionContext = _getContext.Invoke();
@@ -468,7 +468,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
         catch (Exception e)
         {
             return ResultBase<Exception?>.GetWithError(
-                    new InvalidOperationException($"Failed to create {nameof(TExecutionContext)}.", e)
+                    new InvalidOperationException($"Failed to create {nameof(TQuest)}.", e)
                 );
         }
 
@@ -497,7 +497,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     /// </summary>
     /// <param name="executionContext">Context execution</param>
     /// <exception cref="ArgumentNullException"><paramref name="executionContext"/></exception>
-    private void RunLoopSearch(TExecutionContext executionContext, TData? dataToSearch = null)
+    private void RunLoopSearch(TQuest executionContext, TData? dataToSearch = null)
     {
         _mreWaitProcessing.WaitOne();
 
