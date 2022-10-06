@@ -187,6 +187,9 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     /// <summary>
     /// Async disposable, cancel all threads in execution and wait cancel
     /// </summary>
+    /// <remarks>
+    ///     <para>This method execute internaly <see cref="StopAsync(CancellationToken)"/></para>
+    /// </remarks>
     public async ValueTask DisposeAsync()
     {
         await StopAsync();

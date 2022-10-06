@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>Scraper DI</AssemblyName>
-    <Title>Scraper DI</Title>
-    <PackageTags>scraper;scrapers;scraper di</PackageTags>
-    <Description>A component executable multithreads of scrapers with extensions with Dependency Injection.</Description>
-    <Authors>Guilherme Bley</Authors>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

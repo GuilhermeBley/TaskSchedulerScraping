@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>Scraper</AssemblyName>
-    <Title>Scraper</Title>
-    <PackageTags>scraper;scrapers</PackageTags>
-    <Description>A component executable multithreads of scrapers.</Description>
-    <Authors>Guilherme Bley</Authors>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
