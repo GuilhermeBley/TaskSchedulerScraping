@@ -106,7 +106,33 @@ public class ModelDisposeTest
         var resultPause = await model.PauseAsync(true);
         Assert.False(resultPause.IsSucess);
 
-        var resultUnPause = await model.PauseAsync(true);
+        var resultUnPause = await model.PauseAsync(false);
+        Assert.False(resultUnPause.IsSucess);
+
+        Assert.True(ModelStateEnum.Disposed == model.State || 
+            ModelStateEnum.WaitingDispose == model.State);
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task Dispose_DisposeAndPauseAndUnpause_SucessDisposeOrWait()
+    {
+        IModelScraper model =
+            new ModelScraper<IntegerExecution, IntegerData>
+            (
+                100,
+                () => new IntegerExecution(),
+                async () => { await Task.CompletedTask; return IntegerDataFactory.GetData(100); }
+            );
+
+        using (model)
+        {
+            Assert.True((await model.Run()).IsSucess);    
+        }
+
+        var resultPause = await model.PauseAsync(true);
+        Assert.False(resultPause.IsSucess);
+
+        var resultUnPause = await model.PauseAsync(false);
         Assert.False(resultUnPause.IsSucess);
 
         Assert.True(ModelStateEnum.Disposed == model.State || 
