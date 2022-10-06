@@ -174,6 +174,11 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
                 return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Already disposed"));
             }
 
+            if (_status.IsInitialized())
+            {
+                return ResultBase<PauseModel>.GetWithError(new PauseModel(PauseModelEnum.Failed, "Not Initialized"));
+            }
+
             stateLocked = _status.State;
         }
 
@@ -286,6 +291,7 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
         }
         catch
         {
+            _searchData = new();
             lock (_stateLock)
                 _status.SetState(ModelStateEnum.NotRunning);
             throw;
@@ -336,10 +342,6 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
 
             return ResultBase<RunModel>.GetSucess(new RunModel(RunModelEnum.OkRequest, _countScraper));
         }
-        catch (Exception e)
-        {
-            return ResultBase<RunModel>.GetWithError(new RunModel(RunModelEnum.FailedRequest, _countScraper, e.Message));
-        }
         finally
         {
             _mreWaitProcessing.Set();
@@ -384,6 +386,18 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
                 return;
             }
 
+            if (!_contexts.Any())
+            {
+                if (!_cts.IsCancellationRequested)
+                    _cts.Cancel();
+
+                _cts.Dispose();
+
+                _status.SetState(ModelStateEnum.Disposed);
+
+                return;
+            }
+
             try
             {
                 _mreWaitProcessing.Reset();
@@ -407,6 +421,9 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
     /// <summary>
     /// Only one Thread should be acess this method
     /// </summary>
+    /// <remarks>
+    ///     <para>Creates a new instance of <typeparamref name="TExecutionContext"/> to each thread which executes this method</para>
+    /// </remarks>
     private ResultBase<Exception?> RunExecute()
     {
         Exception? exceptionEnd = null;
@@ -653,6 +670,19 @@ public class ModelScraper<TExecutionContext, TData> : IModelScraper
         public bool IsDisposed()
         {
             if (GetLockedState() == ModelStateEnum.Disposed)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Check if is NotRunning or WaitingRunning
+        /// </summary>
+        public bool IsInitialized()
+        {
+             var state = GetLockedState();
+            if (state == ModelStateEnum.WaitingRunning
+                || state == ModelStateEnum.NotRunning)
                 return true;
 
             return false;
