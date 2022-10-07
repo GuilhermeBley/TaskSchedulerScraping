@@ -457,3 +457,8 @@ $RECYCLE.BIN/
 ## Dont show development 
 ##
 *appsettings.Development.json
+
+##
+## Nuget config
+##
+*nuget.config
